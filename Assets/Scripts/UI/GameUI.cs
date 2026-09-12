@@ -53,10 +53,14 @@ namespace OutOfWay
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 0.5f;
 
-            var es = new GameObject("EventSystem");
-            es.transform.SetParent(parent, false);
-            es.AddComponent<EventSystem>();
-            es.AddComponent<InputSystemUIInputModule>();
+            // The loaded scene may already carry one, and Unity errors on a second.
+            if (FindAnyObjectByType<EventSystem>() == null)
+            {
+                var es = new GameObject("EventSystem");
+                es.transform.SetParent(parent, false);
+                es.AddComponent<EventSystem>();
+                es.AddComponent<InputSystemUIInputModule>();
+            }
 
             var ui = canvasGo.AddComponent<GameUI>();
             ui.Build();
@@ -75,8 +79,8 @@ namespace OutOfWay
 
             _title = Panel("Title", transform, new Color(0.02f, 0.03f, 0.04f, 0.18f));
             Image(_title.transform, "TopBar", new Color(0.05f, 0.05f, 0.06f, 0.72f), new Vector2(0, 430), new Vector2(1920, 220));
-            Label(_title.transform, "OUT OF THE WAY", 86, Mustard, new Vector2(0, 470), 1400, 100, FontStyle.Bold);
-            Label(_title.transform, "BUS DRIVER RHYTHM", 26, Paper, new Vector2(0, 400), 800, 36, FontStyle.Normal);
+            Label(_title.transform, "OUT OF THE WAY", 86, Mustard, new Vector2(0, 446), 1400, 100, FontStyle.Bold);
+            Label(_title.transform, "BUS DRIVER RHYTHM", 26, Paper, new Vector2(0, 376), 800, 36, FontStyle.Normal);
             Image(_title.transform, "BottomBar", new Color(0.05f, 0.05f, 0.06f, 0.78f), new Vector2(0, -430), new Vector2(1920, 220));
             Label(_title.transform, "They chant Get Out Of The Way.  Honk it back — once per word, same rhythm.", 26, new Color(1f, 1f, 1f, 0.82f), new Vector2(0, -390), 1400, 40, FontStyle.Italic);
             Label(_title.transform, "SPACE  OR  HONK  TO  DRIVE", 32, Mustard, new Vector2(0, -450), 900, 44, FontStyle.Bold);
@@ -84,18 +88,10 @@ namespace OutOfWay
             _hud = Panel("HUD", transform, Color.clear);
             _hud.GetComponent<Image>().raycastTarget = false;
 
-            Chip(_hud.transform, new Vector2(48, -36), new Vector2(0, 1), new Vector2(0, 1), new Vector2(280, 84));
-            _score = Label(_hud.transform, "CLEARED  0", 28, Paper, Vector2.zero, 240, 40, FontStyle.Bold);
-            Anchor(_score.rectTransform, new Vector2(0, 1), new Vector2(160, -48));
-
-            Chip(_hud.transform, new Vector2(48, -132), new Vector2(0, 1), new Vector2(0, 1), new Vector2(280, 60));
-            _streak = Label(_hud.transform, "0 IN A ROW", 22, Mustard, Vector2.zero, 240, 32, FontStyle.Bold);
-            _streak.font = _lyricFont;
-            Anchor(_streak.rectTransform, new Vector2(0, 1), new Vector2(160, -162));
-
-            Chip(_hud.transform, new Vector2(-48, -36), new Vector2(1, 1), new Vector2(1, 1), new Vector2(220, 84));
-            _speed = Label(_hud.transform, "0 MPH", 28, Mustard, Vector2.zero, 180, 40, FontStyle.Bold);
-            Anchor(_speed.rectTransform, new Vector2(1, 1), new Vector2(-140, -48));
+            // Hand-stamped look: each stat sits at its own angle rather than in a tidy column.
+            _score = TiltedStat("0 Hit", 58, Paper, new Vector2(0, 1), new Vector2(220, -140), new Vector2(340, 112), -6.5f);
+            _streak = TiltedStat("0 IN A ROW", 42, Mustard, new Vector2(0, 1), new Vector2(292, -254), new Vector2(380, 92), 7.5f);
+            _speed = TiltedStat("0 MPH", 50, Mustard, new Vector2(1, 1), new Vector2(-196, -142), new Vector2(300, 104), 5f);
 
             _banner = Label(_hud.transform, "", 26, Mustard, new Vector2(0, 330), 900, 40, FontStyle.Bold);
             BuildPhraseRow();
@@ -122,6 +118,24 @@ namespace OutOfWay
             Label(_fail.transform, "RESTARTING  —  SPACE  TO  SKIP", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 420, 24, FontStyle.Normal);
 
             ShowTitle();
+        }
+
+        /// <summary>Chip and label in one rotated holder, so the backing tilts with the text.</summary>
+        Text TiltedStat(string text, int size, Color color, Vector2 anchor, Vector2 pos, Vector2 chipSize, float angle)
+        {
+            var holder = new GameObject("Stat", typeof(RectTransform)).transform;
+            holder.SetParent(_hud.transform, false);
+            var rt = holder.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = chipSize;
+            rt.anchoredPosition = pos;
+            rt.localEulerAngles = new Vector3(0f, 0f, angle);
+
+            Image(holder, "Chip", ChipBg, Vector2.zero, chipSize);
+            var label = Label(holder, text, size, color, Vector2.zero, chipSize.x - 24f, chipSize.y, FontStyle.Bold);
+            label.font = _lyricFont;
+            return label;
         }
 
         void BuildPhraseRow()
@@ -418,13 +432,6 @@ namespace OutOfWay
             rt.pivot = min;
             rt.anchoredPosition = pos;
             rt.sizeDelta = size;
-        }
-
-        static void Anchor(RectTransform rt, Vector2 anchor, Vector2 pos)
-        {
-            rt.anchorMin = rt.anchorMax = anchor;
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = pos;
         }
 
         static void Stretch(RectTransform rt)

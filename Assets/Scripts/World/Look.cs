@@ -116,14 +116,40 @@ namespace OutOfWay
             foreach (var r in root.GetComponentsInChildren<Renderer>(true))
             {
                 var mats = r.sharedMaterials;
-                if (mats == null || mats.Length == 0) continue;
+                if (mats == null || mats.Length == 0)
+                {
+                    // FBX exported without materials — fall back to the object name.
+                    r.sharedMaterial = Make(PaletteFor(r.name, Color.gray));
+                    continue;
+                }
+
                 for (int i = 0; i < mats.Length; i++)
-                    mats[i] = FromImported(mats[i]);
+                    mats[i] = FromImported(mats[i], r.name);
                 r.sharedMaterials = mats;
             }
         }
 
-        public static Material FromImported(Material source)
+        /// <summary>
+        /// Maps a Maya material or object name onto the game palette.
+        /// Returns <paramref name="fallback"/> when nothing matches.
+        /// </summary>
+        static Color PaletteFor(string rawName, Color fallback)
+        {
+            var n = (rawName ?? string.Empty).ToLowerInvariant();
+            if (n.Contains("lambert5") || n.Contains("street") || n.Contains("road"))
+                return new Color(0.24f, 0.25f, 0.27f);
+            if (n.Contains("lambert6") || n.Contains("side") || n.Contains("walk") || n.Contains("curb"))
+                return new Color(0.82f, 0.81f, 0.78f);
+            if (n.Contains("lambert3") || n.Contains("building"))
+                return new Color(0.86f, 0.48f, 0.35f);
+            if (n.Contains("lambert4"))
+                return new Color(0.35f, 0.58f, 0.65f);
+            if (n.Contains("lambert7") || n.Contains("lamp") || n.Contains("pole"))
+                return new Color(0.18f, 0.18f, 0.20f);
+            return fallback;
+        }
+
+        public static Material FromImported(Material source, string objectName = null)
         {
             if (Lit == null) Init();
             if (source == null) return Lit ?? Make(Color.gray);
@@ -138,21 +164,9 @@ namespace OutOfWay
 
             Texture tex = source.HasProperty("_BaseMap") ? source.GetTexture("_BaseMap") : source.mainTexture;
 
-            // If untextured default Maya gray, apply palette mapped from material name
+            // If untextured default Maya gray, map the palette from the material or object name.
             if (tex == null && Mathf.Abs(color.r - 0.5f) < 0.05f && Mathf.Abs(color.g - 0.5f) < 0.05f && Mathf.Abs(color.b - 0.5f) < 0.05f)
-            {
-                var n = source.name.ToLowerInvariant();
-                if (n.Contains("lambert5") || n.Contains("street") || n.Contains("road"))
-                    color = new Color(0.24f, 0.25f, 0.27f);
-                else if (n.Contains("lambert6") || n.Contains("side") || n.Contains("walk") || n.Contains("curb"))
-                    color = new Color(0.82f, 0.81f, 0.78f);
-                else if (n.Contains("lambert3") || n.Contains("building"))
-                    color = new Color(0.86f, 0.48f, 0.35f);
-                else if (n.Contains("lambert4"))
-                    color = new Color(0.35f, 0.58f, 0.65f);
-                else if (n.Contains("lambert7") || n.Contains("lamp") || n.Contains("pole"))
-                    color = new Color(0.18f, 0.18f, 0.20f);
-            }
+                color = PaletteFor($"{source.name} {objectName}", color);
 
             var mat = Make(color, null, tex);
             mat.name = source.name + " (URP)";

@@ -145,12 +145,14 @@ namespace OutOfWay
 
             if (_female != null)
             {
-                PlacePedestrian(tile, _female, new Vector3(-5.2f, 0f, len * 0.36f), 90f);
+                PlacePedestrian(tile, _female, new Vector3(-5.3f, 0f, len * 0.28f), 90f);
+                PlacePedestrian(tile, _female, new Vector3(5.3f, 0f, len * 0.76f), -85f);
             }
 
             if (_male != null)
             {
-                PlacePedestrian(tile, _male, new Vector3(5.2f, 0f, len * 0.65f), -90f);
+                PlacePedestrian(tile, _male, new Vector3(5.3f, 0f, len * 0.44f), -95f);
+                PlacePedestrian(tile, _male, new Vector3(-5.3f, 0f, len * 0.88f), 80f);
             }
         }
 
@@ -166,7 +168,7 @@ namespace OutOfWay
 
             var b = Combined(ped);
             float currentH = Mathf.Max(0.1f, b.size.y);
-            float targetHeight = 1.75f;
+            float targetHeight = 3.4f;
             float scale = targetHeight / currentH;
             ped.transform.localScale = Vector3.one * scale;
 

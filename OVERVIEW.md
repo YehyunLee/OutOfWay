@@ -256,7 +256,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
   - Aligns the road surface flush with $Y = 0$.
   - Measures the block's Z-length to allow seamless longitudinal tiling.
   - **Street Trees (`PlantTrees`):** Staggers `SM_Tree_01` along the left ($X = -5.4$m) and right ($X = +5.4$m) sidewalks. Strips non-geometry nodes (cameras/lights), normalizes height to ~5.8m, and aligns base flush to sidewalk.
-  - **Pedestrians (`PlacePedestrians`):** Places `SM_HumanFemale` and `SM_HumanMale` models along the sidewalks facing the street. Normalizes heights to ~1.75m and grounds flush to sidewalk surface.
+  - **Pedestrians (`PlacePedestrians`):** Places `SM_HumanFemale` and `SM_HumanMale` models along the sidewalks facing the street. Normalizes heights to ~3.4m for prominent arcade-scale readability and grounds flush to sidewalk surface.
 - **`EndlessCity.cs` (Infinite Recycling):**
   - Maintains a continuous chain of designer city blocks ahead of the bus along +Z.
   - Recycles blocks that fall $40$m behind the camera to the front of the queue, creating an endless street with zero garbage collection allocations.
@@ -351,11 +351,9 @@ flowchart TD
 | **Obstacle spawn distance look-ahead** | `ObstacleSpawner.cs` | `Spawn()` &rarr; `travel` calculation |
 | **Obstacle vehicle mix (Car vs Bike vs Ambulance)** | `ObstacleSpawner.cs` | `RollKind()` probability thresholds |
 | **Roadway width and tile alignment** | `CityKit.cs` | `StandardRoadWidth = 8.2f`, `FindRoad()` |
-| **Street trees and pedestrian spawning** | `CityKit.cs` | `PlantTrees()`, `PlacePedestrians()`, tree height (~5.8m), pedestrian height (~1.75m) |
-| **Scene textures & BaseColor assignment** | `Look.cs` | `LoadTextures()`, `FromImported()`, `Assets/Resources/Textures/` |
-| **Building, road, and bus color palette** | `Look.cs` | `PaletteFor()`, `BusBody`, `BusDark`, `Road` |
-| **HUD tilt angles, text sizes, positions** | `GameUI.cs` | `Build()` &rarr; `TiltedStat(...)` calls |
-| **Camera distance, height, and punch intensity** | `GameBootstrap.cs` / `CameraRig.cs` | `cam.transform.position`, `Rig.Punch(...)` |
+| **Street trees and pedestrian spawning** | `CityKit.cs` | `PlantTrees()`, `PlacePedestrians()`, tree height (~5.8m), pedestrian height (~3.4m) |
+| **Obstacle vehicle scale (Car, Ambulance, Bike)** | `VehicleFactory.cs` | `MakeCar()` (1.55x), `MakeAmbulance()` (1.5x), `MakeBike()` (1.45x) |
+| **Camera distance, height, and punch intensity** | `GameBootstrap.cs` / `CameraRig.cs` | `CameraOffset` (`0, 4.25, -4.8`), `CameraLookAhead` (`0, 1.6, 22`), `Rig.Punch(...)` |
 
 ---
 

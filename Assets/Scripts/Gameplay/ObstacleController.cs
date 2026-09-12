@@ -29,7 +29,7 @@ namespace OutOfWay
             Cleared = true;
             _dodging = true;
             float side = Random.value < 0.5f ? -1f : 1f;
-            _dodgeTarget = transform.position + new Vector3(side * 5.4f, 0f, 3.5f);
+            _dodgeTarget = transform.position + new Vector3(side * 5.8f, 0f, 3.5f);
         }
 
         void Update()

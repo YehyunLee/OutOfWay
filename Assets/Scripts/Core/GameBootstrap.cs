@@ -47,6 +47,10 @@ namespace OutOfWay
         [Tooltip("Chant rhythms. Leave empty to use the built-in placeholder set.")]
         public PhraseLibrary Phrases;
 
+        [Header("Camera Tuning")]
+        public Vector3 CameraOffset = new(0f, 4.25f, -4.8f);
+        public Vector3 CameraLookAhead = new(0f, 1.6f, 22f);
+
         [Header("Run")]
         [Tooltip("Seconds between the crash and the run restarting on its own.")]
         public float RestartDelay = 3f;
@@ -127,7 +131,7 @@ namespace OutOfWay
             }
 
             cam.enabled = true;
-            cam.transform.position = bus.transform.position + new Vector3(0f, 4.4f, -10.5f);
+            cam.transform.position = bus.transform.position + CameraOffset;
             cam.fieldOfView = 60f;
             cam.nearClipPlane = 0.2f;
             cam.farClipPlane = 180f;
@@ -138,6 +142,8 @@ namespace OutOfWay
                 urpCam.renderPostProcessing = true;
             var rig = cam.GetComponent<CameraRig>() ?? cam.gameObject.AddComponent<CameraRig>();
             rig.Target = bus.transform;
+            rig.Offset = CameraOffset;
+            rig.LookAhead = CameraLookAhead;
 
 #if UNITY_EDITOR
             if (HonkSound == null)

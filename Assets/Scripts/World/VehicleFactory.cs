@@ -134,6 +134,7 @@ namespace OutOfWay
         static ObstacleController MakeCar(Transform parent, int seed)
         {
             var root = Build.Empty("Car", parent);
+            root.localScale = Vector3.one * 1.55f;
             var paint = Look.Car(seed);
             Build.Box(root, "Body", new Vector3(0f, 0.62f, 0f), new Vector3(1.7f, 0.7f, 3.6f), paint);
             Build.Box(root, "Cabin", new Vector3(0f, 1.12f, -0.15f), new Vector3(1.55f, 0.5f, 1.8f), Look.GlassMat);
@@ -152,6 +153,7 @@ namespace OutOfWay
         static ObstacleController MakeAmbulance(Transform parent)
         {
             var root = Build.Empty("Ambulance", parent);
+            root.localScale = Vector3.one * 1.5f;
             Build.Box(root, "Body", new Vector3(0f, 1.05f, 0f), new Vector3(2.0f, 1.6f, 4.4f), Look.AmbulanceMat);
             Build.Box(root, "Stripe", new Vector3(0f, 1.05f, 0f), new Vector3(2.06f, 0.28f, 4.44f), Look.AmbulanceRedMat);
             Build.Box(root, "Cab", new Vector3(0f, 1.15f, 1.55f), new Vector3(1.95f, 1.15f, 1.3f), Look.AmbulanceMat);
@@ -173,6 +175,7 @@ namespace OutOfWay
         static ObstacleController MakeBike(Transform parent, int seed, bool rider)
         {
             var root = Build.Empty(rider ? "Bicycle" : "ParkedBike", parent);
+            root.localScale = Vector3.one * 1.45f;
             var frame = Look.Car(seed + 3);
             Build.Cylinder(root, "FrontWheel", new Vector3(0f, 0.38f, 0.72f), new Vector3(0.58f, 0.045f, 0.58f), Look.BikeMat, new Vector3(0f, 0f, 90f));
             Build.Cylinder(root, "RearWheel", new Vector3(0f, 0.38f, -0.58f), new Vector3(0.58f, 0.045f, 0.58f), Look.BikeMat, new Vector3(0f, 0f, 90f));

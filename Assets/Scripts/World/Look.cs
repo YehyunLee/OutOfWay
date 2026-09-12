@@ -6,8 +6,8 @@ namespace OutOfWay
     /// <summary>URP unlit materials for vehicles and imported meshes.</summary>
     public static class Look
     {
-        public static readonly Color BusBody = new(0.96f, 0.76f, 0.12f);
-        public static readonly Color BusStripe = new(0.10f, 0.38f, 0.42f);
+        public static readonly Color BusBody = new(0.88f, 0.12f, 0.14f); // Bold transit red
+        public static readonly Color BusStripe = new(0.96f, 0.96f, 0.94f); // Clean white trim
         public static readonly Color BusDark = new(0.12f, 0.12f, 0.14f);
         public static readonly Color Glass = new(0.20f, 0.32f, 0.40f);
         public static readonly Color Chrome = new(0.78f, 0.80f, 0.82f);
@@ -21,13 +21,13 @@ namespace OutOfWay
 
         public static readonly Color[] CarBodies =
         {
-            new(0.86f, 0.14f, 0.12f),
-            new(0.12f, 0.32f, 0.72f),
-            new(0.96f, 0.96f, 0.94f),
-            new(0.10f, 0.10f, 0.12f),
-            new(0.12f, 0.62f, 0.36f),
-            new(0.96f, 0.55f, 0.08f),
-            new(0.62f, 0.18f, 0.62f)
+            new(0.96f, 0.76f, 0.12f), // Taxi Yellow
+            new(0.12f, 0.32f, 0.72f), // Royal Blue
+            new(0.96f, 0.96f, 0.94f), // White
+            new(0.10f, 0.10f, 0.12f), // Dark Charcoal
+            new(0.12f, 0.62f, 0.36f), // Emerald Green
+            new(0.96f, 0.55f, 0.08f), // Vibrant Orange
+            new(0.62f, 0.18f, 0.62f)  // Purple
         };
 
         public static Material Lit;
@@ -103,6 +103,19 @@ namespace OutOfWay
         {
             ImportedByTag.Clear();
             _texturesLoaded = false;
+            Lit = null;
+            BusMat = null;
+            BusStripeMat = null;
+            DarkMat = null;
+            GlassMat = null;
+            ChromeMat = null;
+            HeadlightMat = null;
+            TaillightMat = null;
+            AmbulanceMat = null;
+            AmbulanceRedMat = null;
+            BikeMat = null;
+            RiderMat = null;
+            CarMats = null;
         }
 
         public static void LoadTextures()

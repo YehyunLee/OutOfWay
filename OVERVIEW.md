@@ -71,7 +71,7 @@ OutOfWay/
 │   │   ├── Audio/
 │   │   │   └── ProceduralAudio.cs        Synthesized horns, crash noise, and speed-pitched engine audio
 │   │   └── UI/
-│   │       └── GameUI.cs                 Typography, tilted HUD stats, word animator, metronome toggle
+│   │       └── GameUI.cs                 Typography, bold text, tilted HUD stats, word animator
 │   ├── Resources/
 │   │   ├── Fonts/                        Custom fonts (BrownieStencil, ArchivoBlack, Anton, Bangers, Bungee)
 │   │   ├── Models/                       Runtime-loadable FBX prefabs (SM_Tree_01, SM_HumanFemale, SM_HumanMale)
@@ -133,7 +133,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 ### 3.2 State Management & Progression (`GameManager.cs`)
 - **Location:** `Assets/Scripts/Core/GameManager.cs`
 - **State Machine (`GameState`):**
-  - `Title`: Bus parked, engine rumbling, metronome toggle accessible, prompt: *"HONK TO DRIVE"*.
+  - `Title`: Bus parked, engine rumbling, metronome playing, prompt: *"HONK TO DRIVE"*.
   - `Playing`: Bus accelerates forward along +Z, obstacles spawn ahead, rhythm director active.
   - `Failed`: Bus spinout, crash SFX, red *"DRIVER'S LICENSE REVOKED"* card with score breakdown, automatic restart after `RestartDelay` seconds.
 - **In-Place Restarts:** The game **never** calls `SceneManager.LoadScene()`. Restarting simply calls `Bus.StartDriving()`, clears existing obstacles, resets `RhythmDirector`, and the road continues seamlessly from the bus's current position.
@@ -176,10 +176,10 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
   - `Update()` detects loop seam wrap-around on `Music.time < _lastMusicTime`.
   - Every 250ms, `targetTime = Music.time % metroLen` checks if the metronome has drifted by $> 35$ms and realigns it immediately.
 - **Tempo Scaling (`TempoScale`):** Calculated as `Bpm / 130f`. Used by `RhythmDirector` to scale phrase timers and tolerance windows so the rhythm remains in lockstep with the music.
-- **Accessibility Metronome Toggle:**
-  - Default: **OFF** (`PlayerPrefs.GetInt("OutOfWay.Metronome", 0)`).
-  - Toggled via the Title screen button, HUD button, or keyboard shortcut **`M`**.
-  - Runs continuously in phase with volume muted, allowing instantaneous, click-free toggling.
+- **Synchronized Metronome:**
+  - Default: **ON** (active on game start for clear rhythmic beat reference).
+  - Can be toggled on/off silently via keyboard shortcut **`M`**.
+  - Runs continuously in lockstep with the background music loop and bar intervals.
 - **Procedural SFX:** `ProceduralAudio.cs` generates dynamic horns, crash noise, accents, and pitch-scaled bus engine sound (`SetEngineSpeed(normalized)`).
 
 ### 3.4 Call-and-Response Rhythm Engine (`RhythmDirector.cs`, `PhrasePattern.cs`, `PhraseLibrary.cs`)
@@ -284,17 +284,15 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
     - **Score Chip:** Rotated `-6.5°` at top-left (`340 × 112`).
     - **Streak Chip:** Rotated `+7.5°` below score (`380 × 92`), punches on increment, turns Red at streaks $\ge 10$.
     - **Speedometer:** Rotated `+5.0°` at top-right (`300 × 104`).
-    - **HUD Metronome Toggle:** Rotated `+4.0°` underneath the speedometer.
 - **Call-and-Response Typography Animator:**
   - 5 token labels: `GET`, `OUT`, `OF`, `THE`, `WAY`.
   - Call Phase: Token changes from Dim Gray (`#38393F`) to Paper White (`#F5F5F0`).
   - Response Phase: Tokens flip to Mustard Yellow (`#F5C242`), banner displays *"HONK IT BACK"*.
   - Hit Accepted: Words illuminate vibrant Green (`#45D166`).
   - Error: Words stamped with giant Red *"FAIL!"* (`#D94848`).
-- **Accessibility Metronome Toggle Buttons:**
-  - Available on both the Title screen and In-Game HUD.
-  - Reflects active state visually (`METRONOME: OFF` in neutral chip vs `METRONOME: ON` in bright green/mustard).
-  - Keyboard hotkey **`M`** triggers toggle instantly.
+- **Metronome Beat Synchronization:**
+  - Active by default upon launch; keeps beat 1 and phrase timing locked to the tempo.
+  - Keyboard hotkey **`M`** available for on-the-fly toggling.
 
 ---
 
@@ -303,7 +301,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 ```mermaid
 flowchart TD
     subgraph RunLoop [World & Bus Run Loop]
-        title[Title Screen: Bus Parked, Engine Idling\nMetronome Toggle Available [M]]
+        title[Title Screen: Bus Parked, Engine Idling\nMetronome Active by Default]
         title -->|Space / Click / Honk| play[Playing: Bus Accelerates +Z]
         play --> spawner[Obstacle Spawner Computes Look-Ahead]
         spawner --> activeBlocker[Obstacle Placed in Bus Lane]

@@ -41,14 +41,6 @@ namespace OutOfWay
         float _bannerUntil;
         float _streakPunchUntil;
 
-        Button _titleMetroBtn;
-        Text _titleMetroText;
-        Image _titleMetroImg;
-
-        Button _hudMetroBtn;
-        Text _hudMetroText;
-        Image _hudMetroImg;
-
         public static GameUI Create(Transform parent)
         {
             var canvasGo = new GameObject("UI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -88,18 +80,10 @@ namespace OutOfWay
             _title = Panel("Title", transform, new Color(0.02f, 0.03f, 0.04f, 0.18f));
             Image(_title.transform, "TopBar", new Color(0.05f, 0.05f, 0.06f, 0.72f), new Vector2(0, 430), new Vector2(1920, 220));
             Label(_title.transform, "OUT OF THE WAY", 86, Mustard, new Vector2(0, 446), 1400, 100, FontStyle.Bold);
-            Label(_title.transform, "BUS DRIVER RHYTHM", 26, Paper, new Vector2(0, 376), 800, 36, FontStyle.Normal);
+            Label(_title.transform, "BUS DRIVER RHYTHM", 26, Paper, new Vector2(0, 376), 800, 36, FontStyle.Bold);
             Image(_title.transform, "BottomBar", new Color(0.05f, 0.05f, 0.06f, 0.78f), new Vector2(0, -430), new Vector2(1920, 220));
-            Label(_title.transform, "They chant Get Out Of The Way.  Honk it back — once per word, same rhythm.", 26, new Color(1f, 1f, 1f, 0.82f), new Vector2(0, -390), 1400, 40, FontStyle.Italic);
+            Label(_title.transform, "They chant Get Out Of The Way.  Honk it back — once per word, same rhythm.", 26, new Color(1f, 1f, 1f, 0.82f), new Vector2(0, -390), 1400, 40, FontStyle.Bold);
             Label(_title.transform, "HONK  TO  DRIVE", 32, Mustard, new Vector2(0, -450), 900, 44, FontStyle.Bold);
-
-            _titleMetroBtn = ToggleButton(_title.transform, "METRONOME: OFF", new Vector2(0, -290), new Vector2(280, 48), new Vector2(0.5f, 0.5f), out _titleMetroText, out _titleMetroImg);
-            _titleMetroBtn.onClick.AddListener(() =>
-            {
-                MusicConductor.Instance?.ToggleMetronome();
-                UpdateMetronomeUI();
-            });
-            Label(_title.transform, "ACCESSIBILITY  •  PRESS [M] TO TOGGLE", 15, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -332), 480, 24, FontStyle.Normal);
 
             _hud = Panel("HUD", transform, Color.clear);
             _hud.GetComponent<Image>().raycastTarget = false;
@@ -109,17 +93,11 @@ namespace OutOfWay
             _streak = TiltedStat("0 IN A ROW", 42, Mustard, new Vector2(0, 1), new Vector2(292, -254), new Vector2(380, 92), 7.5f);
             _speed = TiltedStat("0 MPH", 50, Mustard, new Vector2(1, 1), new Vector2(-196, -142), new Vector2(300, 104), 5f);
 
-            _hudMetroBtn = ToggleButton(_hud.transform, "METRO: OFF", new Vector2(-196, -236), new Vector2(260, 56), new Vector2(1, 1), out _hudMetroText, out _hudMetroImg, 4f);
-            _hudMetroBtn.onClick.AddListener(() =>
-            {
-                MusicConductor.Instance?.ToggleMetronome();
-                UpdateMetronomeUI();
-            });
-
             _banner = Label(_hud.transform, "", 26, Mustard, new Vector2(0, 330), 900, 40, FontStyle.Bold);
             BuildPhraseRow();
             _failStamp = Label(_hud.transform, "", 96, Stamp, new Vector2(0, 140), 900, 120, FontStyle.Bold);
             _failStamp.font = _lyricFont;
+            _failStamp.fontStyle = FontStyle.Bold;
 
             _honkFlash = Image(_hud.transform, "Flash", Color.clear, Vector2.zero, new Vector2(1920, 1080));
             _honkFlash.raycastTarget = false;
@@ -133,15 +111,11 @@ namespace OutOfWay
             Chip(_fail.transform, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(760, 520));
             Label(_fail.transform, "DRIVER'S LICENSE", 28, Paper, new Vector2(0, 150), 600, 40, FontStyle.Bold);
             Label(_fail.transform, "REVOKED", 84, Stamp, new Vector2(0, 55), 700, 110, FontStyle.Bold);
-            _failReason = Label(_fail.transform, "", 26, Paper, new Vector2(0, -20), 600, 36, FontStyle.Normal);
+            _failReason = Label(_fail.transform, "", 26, Paper, new Vector2(0, -20), 600, 36, FontStyle.Bold);
             _failScore = Label(_fail.transform, "", 24, Mustard, new Vector2(0, -70), 600, 36, FontStyle.Bold);
             var retry = RectButton(_fail.transform, "TRY AGAIN", new Vector2(0, -170), new Vector2(280, 64));
             retry.onClick.AddListener(() => GameManager.Instance.Retry());
-            Label(_fail.transform, "RESTARTING...", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 420, 24, FontStyle.Normal);
-
-            UpdateMetronomeUI();
-            if (MusicConductor.Instance != null)
-                MusicConductor.Instance.MetronomeToggled += _ => UpdateMetronomeUI();
+            Label(_fail.transform, "RESTARTING...", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 420, 24, FontStyle.Bold);
 
             ShowTitle();
         }
@@ -161,6 +135,7 @@ namespace OutOfWay
             Image(holder, "Chip", ChipBg, Vector2.zero, chipSize);
             var label = Label(holder, text, size, color, Vector2.zero, chipSize.x - 24f, chipSize.y, FontStyle.Bold);
             label.font = _lyricFont;
+            label.fontStyle = FontStyle.Bold;
             return label;
         }
 
@@ -184,6 +159,7 @@ namespace OutOfWay
             {
                 var word = Label(row, PhraseWords[i], 84, Dim, Vector2.zero, 200, 110, FontStyle.Bold);
                 word.font = _lyricFont;
+                word.fontStyle = FontStyle.Bold;
                 var fitter = word.gameObject.AddComponent<ContentSizeFitter>();
                 fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -205,7 +181,6 @@ namespace OutOfWay
             _hud.blocksRaycasts = false;
             _fail.alpha = 0f;
             _fail.blocksRaycasts = false;
-            UpdateMetronomeUI();
         }
 
         public void ShowPlaying()
@@ -218,7 +193,6 @@ namespace OutOfWay
             _fail.blocksRaycasts = false;
             _score.text = "0 Hit";
             _streak.text = "0 IN A ROW";
-            UpdateMetronomeUI();
             PaintPhrase(Dim);
             _failStamp.text = "";
             _banner.text = "";
@@ -314,7 +288,6 @@ namespace OutOfWay
             if (Keyboard.current != null && Keyboard.current.mKey.wasPressedThisFrame)
             {
                 MusicConductor.Instance?.ToggleMetronome();
-                UpdateMetronomeUI();
             }
 
             if (GameManager.Instance.State == GameState.Title)
@@ -402,7 +375,7 @@ namespace OutOfWay
             return group;
         }
 
-        Text Label(Transform parent, string text, int size, Color color, Vector2 pos, float w, float h, FontStyle style)
+        Text Label(Transform parent, string text, int size, Color color, Vector2 pos, float w, float h, FontStyle style = FontStyle.Bold)
         {
             var go = new GameObject(string.IsNullOrEmpty(text) ? "Label" : text, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
             go.transform.SetParent(parent, false);
@@ -412,7 +385,7 @@ namespace OutOfWay
             var label = go.GetComponent<Text>();
             label.font = _font;
             label.fontSize = size;
-            label.fontStyle = style;
+            label.fontStyle = FontStyle.Bold;
             label.alignment = TextAnchor.MiddleCenter;
             label.color = color;
             label.text = text;
@@ -468,57 +441,6 @@ namespace OutOfWay
             var button = go.GetComponent<Button>();
             Label(go.transform, caption, 26, Ink, Vector2.zero, size.x, size.y, FontStyle.Bold);
             return button;
-        }
-
-        Button ToggleButton(Transform parent, string caption, Vector2 pos, Vector2 size, Vector2 anchor, out Text labelOut, out Image imageOut, float angle = 0f)
-        {
-            var go = new GameObject(caption, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = rt.anchorMax = anchor;
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = size;
-            rt.anchoredPosition = pos;
-            if (angle != 0f) rt.localEulerAngles = new Vector3(0f, 0f, angle);
-
-            var img = go.GetComponent<Image>();
-            img.color = ChipBg;
-            img.raycastTarget = true;
-            imageOut = img;
-
-            var button = go.GetComponent<Button>();
-            var colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
-            colors.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
-            button.colors = colors;
-
-            labelOut = Label(go.transform, caption, 18, Paper, Vector2.zero, size.x, size.y, FontStyle.Bold);
-            labelOut.alignment = TextAnchor.MiddleCenter;
-            return button;
-        }
-
-        void UpdateMetronomeUI()
-        {
-            bool enabled = MusicConductor.Instance != null && MusicConductor.Instance.MetronomeEnabled;
-            Color activeBg = new Color(0.18f, 0.42f, 0.22f, 0.95f);
-            Color idleBg = ChipBg;
-            Color activeTxt = Mustard;
-            Color idleTxt = new Color(1f, 1f, 1f, 0.65f);
-
-            if (_titleMetroText != null && _titleMetroImg != null)
-            {
-                _titleMetroText.text = enabled ? "METRONOME: ON" : "METRONOME: OFF";
-                _titleMetroText.color = enabled ? activeTxt : idleTxt;
-                _titleMetroImg.color = enabled ? activeBg : idleBg;
-            }
-
-            if (_hudMetroText != null && _hudMetroImg != null)
-            {
-                _hudMetroText.text = enabled ? "METRO: ON" : "METRO: OFF";
-                _hudMetroText.color = enabled ? activeTxt : idleTxt;
-                _hudMetroImg.color = enabled ? activeBg : idleBg;
-            }
         }
 
         void Chip(Transform parent, Vector2 pos, Vector2 min, Vector2 max, Vector2 size)

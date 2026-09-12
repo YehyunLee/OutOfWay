@@ -21,7 +21,7 @@ namespace OutOfWay
     /// <summary>
     /// Beat clock, multi-tempo looping background bed, and synchronized metronome.
     /// Tracks are available at 130 BPM, 140 BPM, and 150 BPM.
-    /// Metronome runs synchronously for accessibility (default OFF).
+    /// Metronome runs synchronously (default ON).
     /// </summary>
     public class MusicConductor : MonoBehaviour
     {
@@ -62,7 +62,7 @@ namespace OutOfWay
         [Tooltip("Offset in seconds to the first downbeat/start beat in the audio loops (calibrated to ~0.022s).")]
         public float StartBeatOffset = 0.022f;
 
-        public bool MetronomeEnabled { get; private set; } = false;
+        public bool MetronomeEnabled { get; private set; } = true;
 
         public event Action<bool> MetronomeToggled;
         public event Action<int, float> TierChanged;
@@ -230,10 +230,12 @@ namespace OutOfWay
                 };
             }
 
-            // Accessibility preference: default is false (OFF)
-            MetronomeEnabled = PlayerPrefs.GetInt("OutOfWay.Metronome", 0) == 1;
-            MetronomeSource.mute = !MetronomeEnabled;
-            MetronomeSource.volume = MetronomeEnabled ? MetronomeVolume : 0f;
+            // Metronome runs by default
+            if (PlayerPrefs.HasKey("OutOfWay.Metronome"))
+                PlayerPrefs.DeleteKey("OutOfWay.Metronome");
+            MetronomeEnabled = true;
+            MetronomeSource.mute = false;
+            MetronomeSource.volume = MetronomeVolume;
 
             SetTier(0);
 
@@ -325,7 +327,6 @@ namespace OutOfWay
         public void SetMetronome(bool enabled)
         {
             MetronomeEnabled = enabled;
-            PlayerPrefs.SetInt("OutOfWay.Metronome", enabled ? 1 : 0);
 
             if (MetronomeSource != null)
             {

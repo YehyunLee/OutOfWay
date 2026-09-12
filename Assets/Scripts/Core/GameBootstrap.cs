@@ -103,6 +103,7 @@ namespace OutOfWay
             if (!Application.isPlaying || _playBooted) return;
             _playBooted = true;
 
+            Look.ClearCache();
             Look.Init();
             StyleWorld();
 
@@ -216,6 +217,7 @@ namespace OutOfWay
             if (StreetAndBuildings == null && Street == null) return;
             if (transform.Find(PreviewName) != null) return;
 
+            Look.ClearCache();
             Look.Init();
 
 #if UNITY_EDITOR

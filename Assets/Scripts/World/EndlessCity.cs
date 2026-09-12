@@ -59,9 +59,8 @@ namespace OutOfWay
             PlaceLamps(tile, 4.2f, rng);
             FillSide(tile, -1f, rng, seed);
             FillSide(tile, 1f, rng, seed + 17);
-
-            if (rng.NextDouble() < 0.45)
-                PlaceParked(tile, rng);
+            PlaceSidewalkBikes(tile, rng);
+            PlaceParked(tile, rng);
 
             if (seed % 3 == 0)
                 PlaceCrosswalk(tile);
@@ -164,16 +163,39 @@ namespace OutOfWay
 
         static void PlaceParked(Transform tile, System.Random rng)
         {
+            if (rng.NextDouble() > 0.55) return;
             float side = rng.NextDouble() < 0.5 ? -1f : 1f;
-            var car = VehicleFactory.MakeObstacle(ObstacleKind.Car, tile, rng.Next());
-            car.transform.localPosition = new Vector3(side * 5.05f, 0f, 6f + (float)rng.NextDouble() * 16f);
+            var car = VehicleFactory.Park(VehicleFactory.MakeObstacle(ObstacleKind.Car, tile, rng.Next()));
+            car.transform.localPosition = new Vector3(side * 5.45f, 0f, 8f + (float)rng.NextDouble() * 14f);
             car.transform.localEulerAngles = new Vector3(0f, side < 0 ? 180f : 0f, 0f);
-            car.Parked = true;
-            car.enabled = false;
-            var col = car.GetComponent<Collider>();
-            if (col != null) col.enabled = false;
-            foreach (var spin in car.GetComponentsInChildren<SpinWithSpeed>())
-                spin.enabled = false;
+        }
+
+        static void PlaceSidewalkBikes(Transform tile, System.Random rng)
+        {
+            int count = 2 + rng.Next(3);
+            for (int i = 0; i < count; i++)
+            {
+                float side = i % 2 == 0 ? -1f : 1f;
+                bool riding = rng.NextDouble() < 0.35;
+                var bike = VehicleFactory.MakeObstacle(ObstacleKind.Bicycle, tile, rng.Next());
+                if (!riding)
+                {
+                    var rider = bike.transform.Find("Rider");
+                    var head = bike.transform.Find("Head");
+                    if (rider != null) Object.Destroy(rider.gameObject);
+                    if (head != null) Object.Destroy(head.gameObject);
+                    bike.transform.localEulerAngles = new Vector3(0f, side < 0 ? 185f : -5f, side * 12f);
+                }
+                else
+                {
+                    bike.transform.localEulerAngles = new Vector3(0f, side < 0 ? 180f : 0f, 0f);
+                }
+
+                VehicleFactory.Park(bike);
+                float x = riding ? side * 4.55f : side * 4.85f;
+                float z = 3f + i * 6.5f + (float)rng.NextDouble() * 2f;
+                bike.transform.localPosition = new Vector3(x, 0f, z);
+            }
         }
 
         public static bool OnRoad(float x) => Mathf.Abs(x) < RoadHalf;

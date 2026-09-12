@@ -55,7 +55,7 @@ namespace OutOfWay
             music.MetronomeClicks = MetronomeClicks;
             music.GetOutOfTheWayPhrase = GetOutOfTheWayPhrase;
             music.Music = music.gameObject.AddComponent<AudioSource>();
-            music.Music.playOnAwake = false;
+            music.SetupBed();
 
             var rhythm = gameObject.AddComponent<RhythmDirector>();
             rhythm.Bind(music);

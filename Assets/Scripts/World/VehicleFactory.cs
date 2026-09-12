@@ -57,7 +57,7 @@ namespace OutOfWay
         {
             return kind switch
             {
-                ObstacleKind.Bicycle => MakeBike(parent),
+                ObstacleKind.Bicycle => MakeBike(parent, seed, true),
                 ObstacleKind.Ambulance => MakeAmbulance(parent),
                 _ => MakeCar(parent, seed)
             };
@@ -102,18 +102,36 @@ namespace OutOfWay
             return obstacle;
         }
 
-        static ObstacleController MakeBike(Transform parent)
+        static ObstacleController MakeBike(Transform parent, int seed, bool rider)
         {
-            var root = Build.Empty("Bicycle", parent);
-            Build.Cylinder(root, "FrontWheel", new Vector3(0f, 0.38f, 0.7f), new Vector3(0.55f, 0.05f, 0.55f), Look.BikeMat, new Vector3(0f, 0f, 90f));
-            Build.Cylinder(root, "RearWheel", new Vector3(0f, 0.38f, -0.55f), new Vector3(0.55f, 0.05f, 0.55f), Look.BikeMat, new Vector3(0f, 0f, 90f));
-            Build.Box(root, "Frame", new Vector3(0f, 0.62f, 0.05f), new Vector3(0.08f, 0.08f, 1.15f), Look.BikeMat, new Vector3(18f, 0f, 0f));
-            Build.Box(root, "Stem", new Vector3(0f, 0.82f, 0.55f), new Vector3(0.07f, 0.45f, 0.07f), Look.BikeMat);
-            Build.Box(root, "Bars", new Vector3(0f, 1.05f, 0.58f), new Vector3(0.7f, 0.06f, 0.06f), Look.ChromeMat);
-            Build.Box(root, "Seat", new Vector3(0f, 0.92f, -0.25f), new Vector3(0.16f, 0.08f, 0.28f), Look.DarkMat);
-            Build.Cylinder(root, "Rider", new Vector3(0f, 1.15f, -0.05f), new Vector3(0.32f, 0.38f, 0.32f), Look.RiderMat);
-            Build.Sphere(root, "Head", new Vector3(0f, 1.62f, 0.08f), 0.28f, Look.RiderMat);
-            return FinishObstacle(root, ObstacleKind.Bicycle, new Vector3(0.9f, 1.8f, 1.6f));
+            var root = Build.Empty(rider ? "Bicycle" : "ParkedBike", parent);
+            var frame = Look.Car(seed + 3);
+            Build.Cylinder(root, "FrontWheel", new Vector3(0f, 0.38f, 0.72f), new Vector3(0.58f, 0.045f, 0.58f), Look.BikeMat, new Vector3(0f, 0f, 90f));
+            Build.Cylinder(root, "RearWheel", new Vector3(0f, 0.38f, -0.58f), new Vector3(0.58f, 0.045f, 0.58f), Look.BikeMat, new Vector3(0f, 0f, 90f));
+            Build.Box(root, "Frame", new Vector3(0f, 0.62f, 0.05f), new Vector3(0.07f, 0.07f, 1.18f), frame, new Vector3(16f, 0f, 0f));
+            Build.Box(root, "Down", new Vector3(0f, 0.55f, 0.28f), new Vector3(0.06f, 0.42f, 0.06f), frame, new Vector3(28f, 0f, 0f));
+            Build.Box(root, "Stem", new Vector3(0f, 0.88f, 0.58f), new Vector3(0.06f, 0.42f, 0.06f), frame);
+            Build.Box(root, "Bars", new Vector3(0f, 1.12f, 0.6f), new Vector3(0.78f, 0.06f, 0.06f), Look.ChromeMat);
+            Build.Box(root, "Seat", new Vector3(0f, 0.95f, -0.28f), new Vector3(0.16f, 0.08f, 0.3f), Look.DarkMat);
+            if (rider)
+            {
+                var clothes = Look.Shop(seed);
+                Build.Cylinder(root, "Rider", new Vector3(0f, 1.18f, -0.02f), new Vector3(0.34f, 0.4f, 0.34f), clothes);
+                Build.Sphere(root, "Head", new Vector3(0f, 1.68f, 0.1f), 0.3f, Look.RiderMat);
+            }
+
+            return FinishObstacle(root, ObstacleKind.Bicycle, new Vector3(0.9f, 1.9f, 1.7f));
+        }
+
+        public static ObstacleController Park(ObstacleController obstacle)
+        {
+            obstacle.Parked = true;
+            obstacle.enabled = false;
+            var col = obstacle.GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+            foreach (var spin in obstacle.GetComponentsInChildren<SpinWithSpeed>())
+                spin.enabled = false;
+            return obstacle;
         }
 
         static ObstacleController FinishObstacle(Transform root, ObstacleKind kind, Vector3 colliderSize)

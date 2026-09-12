@@ -4,9 +4,9 @@ namespace OutOfWay
 {
     public class BusController : MonoBehaviour
     {
-        public float StartSpeed = 7.5f;
-        public float MaxSpeed = 26f;
-        public float Acceleration = 0.22f;
+        public float StartSpeed = 9f;
+        public float MaxSpeed = 28f;
+        public float Acceleration = 0.28f;
 
         public float Speed { get; private set; }
         public bool Running { get; private set; }

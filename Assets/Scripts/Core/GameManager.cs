@@ -131,6 +131,7 @@ namespace OutOfWay
             Rhythm.ResetState();
             ProceduralAudio.Instance.PlayEngine(false);
             ProceduralAudio.Instance.Crash();
+            if (Music != null) Music.SetBedVolume(0.22f);
             Invoke(nameof(StampRevoked), 0.45f);
         }
 

@@ -21,21 +21,22 @@ namespace OutOfWay
         }
 
         /// <summary>
-        /// Placeholder rhythms so the loop plays before the recordings land.
-        /// Times sit on a 0.6s beat (100 BPM) — retime against the real clips.
-        /// No gap is under 0.35s; tighter than that is very hard to honk back by hand.
+        /// Base rhythms calibrated to 130 BPM.
+        /// Base quarter beat b = 60 / 130 = ~0.4615s.
+        /// When tempo scales up to 140 and 150 BPM, MusicConductor.TempoScale scales the rhythm clock.
         /// </summary>
         public static PhraseLibrary CreateDefault()
         {
             var library = CreateInstance<PhraseLibrary>();
+            float b = 60f / 130f;
             library.Patterns = new[]
             {
-                Pattern("Even", new[] { 0f, 0.60f, 1.20f, 1.80f, 2.40f }),
-                Pattern("Rush", new[] { 0f, 0.35f, 0.70f, 1.05f, 1.40f }),
-                Pattern("Drag", new[] { 0f, 0.60f, 1.20f, 1.55f, 2.15f }),
-                Pattern("Stutter", new[] { 0f, 0.35f, 0.70f, 1.30f, 1.65f }),
-                Pattern("Hold", new[] { 0f, 0.45f, 0.90f, 1.35f, 2.25f }),
-                Pattern("Swing", new[] { 0f, 0.50f, 0.85f, 1.35f, 1.70f })
+                Pattern("Even", new[] { 0f, b, b * 2f, b * 3f, b * 4f }),
+                Pattern("Rush", new[] { 0f, b * 0.75f, b * 1.5f, b * 2.25f, b * 3f }),
+                Pattern("Drag", new[] { 0f, b, b * 2f, b * 2.75f, b * 3.75f }),
+                Pattern("Stutter", new[] { 0f, b * 0.5f, b, b * 2.25f, b * 3f }),
+                Pattern("Hold", new[] { 0f, b * 0.75f, b * 1.5f, b * 2.25f, b * 3.75f }),
+                Pattern("Swing", new[] { 0f, b * 0.833f, b * 1.417f, b * 2.25f, b * 2.833f })
             };
             return library;
         }

@@ -41,6 +41,14 @@ namespace OutOfWay
         float _bannerUntil;
         float _streakPunchUntil;
 
+        Button _titleMetroBtn;
+        Text _titleMetroText;
+        Image _titleMetroImg;
+
+        Button _hudMetroBtn;
+        Text _hudMetroText;
+        Image _hudMetroImg;
+
         public static GameUI Create(Transform parent)
         {
             var canvasGo = new GameObject("UI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -81,6 +89,14 @@ namespace OutOfWay
             Label(_title.transform, "They chant Get Out Of The Way.  Honk it back — once per word, same rhythm.", 26, new Color(1f, 1f, 1f, 0.82f), new Vector2(0, -390), 1400, 40, FontStyle.Italic);
             Label(_title.transform, "SPACE  OR  HONK  TO  DRIVE", 32, Mustard, new Vector2(0, -450), 900, 44, FontStyle.Bold);
 
+            _titleMetroBtn = ToggleButton(_title.transform, "METRONOME: OFF", new Vector2(0, -290), new Vector2(280, 48), new Vector2(0.5f, 0.5f), out _titleMetroText, out _titleMetroImg);
+            _titleMetroBtn.onClick.AddListener(() =>
+            {
+                MusicConductor.Instance?.ToggleMetronome();
+                UpdateMetronomeUI();
+            });
+            Label(_title.transform, "ACCESSIBILITY  •  PRESS [M] TO TOGGLE", 15, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -332), 480, 24, FontStyle.Normal);
+
             _hud = Panel("HUD", transform, Color.clear);
             _hud.GetComponent<Image>().raycastTarget = false;
 
@@ -96,6 +112,13 @@ namespace OutOfWay
             Chip(_hud.transform, new Vector2(-48, -36), new Vector2(1, 1), new Vector2(1, 1), new Vector2(220, 84));
             _speed = Label(_hud.transform, "0 MPH", 28, Mustard, Vector2.zero, 180, 40, FontStyle.Bold);
             Anchor(_speed.rectTransform, new Vector2(1, 1), new Vector2(-140, -48));
+
+            _hudMetroBtn = ToggleButton(_hud.transform, "METRO: OFF", new Vector2(-48, -132), new Vector2(220, 60), new Vector2(1, 1), out _hudMetroText, out _hudMetroImg);
+            _hudMetroBtn.onClick.AddListener(() =>
+            {
+                MusicConductor.Instance?.ToggleMetronome();
+                UpdateMetronomeUI();
+            });
 
             _banner = Label(_hud.transform, "", 26, Mustard, new Vector2(0, 330), 900, 40, FontStyle.Bold);
             BuildPhraseRow();
@@ -120,6 +143,10 @@ namespace OutOfWay
             var retry = RectButton(_fail.transform, "TRY AGAIN", new Vector2(0, -170), new Vector2(280, 64));
             retry.onClick.AddListener(() => GameManager.Instance.Retry());
             Label(_fail.transform, "RESTARTING  —  SPACE  TO  SKIP", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 420, 24, FontStyle.Normal);
+
+            UpdateMetronomeUI();
+            if (MusicConductor.Instance != null)
+                MusicConductor.Instance.MetronomeToggled += _ => UpdateMetronomeUI();
 
             ShowTitle();
         }
@@ -165,6 +192,7 @@ namespace OutOfWay
             _hud.blocksRaycasts = false;
             _fail.alpha = 0f;
             _fail.blocksRaycasts = false;
+            UpdateMetronomeUI();
         }
 
         public void ShowPlaying()
@@ -177,6 +205,7 @@ namespace OutOfWay
             _fail.blocksRaycasts = false;
             _score.text = "0 Hit";
             _streak.text = "0 IN A ROW";
+            UpdateMetronomeUI();
             PaintPhrase(Dim);
             _failStamp.text = "";
             _banner.text = "";
@@ -230,6 +259,13 @@ namespace OutOfWay
             _honkArmed = false;
         }
 
+        public void ShowBanner(string text, float duration)
+        {
+            if (_banner == null) return;
+            _banner.text = text;
+            _bannerUntil = Time.time + duration;
+        }
+
         public void ShowMiss(string reason)
         {
             _banner.text = reason;
@@ -261,6 +297,12 @@ namespace OutOfWay
         void Update()
         {
             if (GameManager.Instance == null) return;
+
+            if (Keyboard.current != null && Keyboard.current.mKey.wasPressedThisFrame)
+            {
+                MusicConductor.Instance?.ToggleMetronome();
+                UpdateMetronomeUI();
+            }
 
             if (GameManager.Instance.State == GameState.Title)
             {
@@ -309,7 +351,13 @@ namespace OutOfWay
                 return true;
             if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame)
                 return true;
-            return Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+                    return false;
+                return true;
+            }
+            return false;
         }
 
         static bool PressedHonk()
@@ -407,6 +455,56 @@ namespace OutOfWay
             var button = go.GetComponent<Button>();
             Label(go.transform, caption, 26, Ink, Vector2.zero, size.x, size.y, FontStyle.Bold);
             return button;
+        }
+
+        Button ToggleButton(Transform parent, string caption, Vector2 pos, Vector2 size, Vector2 anchor, out Text labelOut, out Image imageOut)
+        {
+            var go = new GameObject(caption, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = anchor;
+            rt.sizeDelta = size;
+            rt.anchoredPosition = pos;
+
+            var img = go.GetComponent<Image>();
+            img.color = ChipBg;
+            img.raycastTarget = true;
+            imageOut = img;
+
+            var button = go.GetComponent<Button>();
+            var colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
+            colors.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+            button.colors = colors;
+
+            labelOut = Label(go.transform, caption, 18, Paper, Vector2.zero, size.x, size.y, FontStyle.Bold);
+            labelOut.alignment = TextAnchor.MiddleCenter;
+            return button;
+        }
+
+        void UpdateMetronomeUI()
+        {
+            bool enabled = MusicConductor.Instance != null && MusicConductor.Instance.MetronomeEnabled;
+            Color activeBg = new Color(0.18f, 0.42f, 0.22f, 0.95f);
+            Color idleBg = ChipBg;
+            Color activeTxt = Mustard;
+            Color idleTxt = new Color(1f, 1f, 1f, 0.65f);
+
+            if (_titleMetroText != null && _titleMetroImg != null)
+            {
+                _titleMetroText.text = enabled ? "METRONOME: ON" : "METRONOME: OFF";
+                _titleMetroText.color = enabled ? activeTxt : idleTxt;
+                _titleMetroImg.color = enabled ? activeBg : idleBg;
+            }
+
+            if (_hudMetroText != null && _hudMetroImg != null)
+            {
+                _hudMetroText.text = enabled ? "METRO: ON" : "METRO: OFF";
+                _hudMetroText.color = enabled ? activeTxt : idleTxt;
+                _hudMetroImg.color = enabled ? activeBg : idleBg;
+            }
         }
 
         void Chip(Transform parent, Vector2 pos, Vector2 min, Vector2 max, Vector2 size)

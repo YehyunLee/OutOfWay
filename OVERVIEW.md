@@ -50,8 +50,8 @@ OutOfWay/
 | Script | Purpose |
 |---|---|
 | `GameBootstrap.cs` | **Runtime Entry Point.** Initializes `Look`, styles the environment, binds designer FBX assets (`CityKit`), instantiates the bus (`VehicleFactory`), configures the camera rig, builds `MusicConductor`, `RhythmDirector`, `ObstacleSpawner`, `GameUI`, and wires `GameManager`. |
-| `GameManager.cs` | **State & Session Flow.** Handles `Title` &rarr; `Playing` &rarr; `Failed` transitions. Tracks score, speed, distance, and consecutive streaks (*"X IN A ROW"*). Implements fast in-place restarts after crashes. |
-| `MusicConductor.cs` | **High-Precision Audio Clock.** Uses `AudioSettings.dspTime` to provide drift-free beat tracking. Loops `BackgroundBed.mp3`, manages dynamic tempo scaling (`TempoScale`), and provides a dedicated `PhraseSource` for vocal cues. |
+| `GameManager.cs` | **State & Session Flow.** Handles `Title` &rarr; `Playing` &rarr; `Failed` transitions. Tracks score, speed, distance, consecutive streaks (*"X IN A ROW"*), and tempo progression milestones (130 &rarr; 140 &rarr; 150 BPM). Implements fast in-place restarts after crashes. |
+| `MusicConductor.cs` | **High-Precision Multi-Tempo Audio Engine.** Manages 3 progression tiers (130 BPM, 140 BPM, 150 BPM) with synchronized looping background music and accessibility metronome tracks (`Metro_130`, `Metro_140`, `Metro_150`). Maintains drift-free phase alignment and handles accessibility toggling. |
 
 ### Rhythm & Call-and-Response
 
@@ -82,7 +82,7 @@ OutOfWay/
 
 | Script | Purpose |
 |---|---|
-| `GameUI.cs` | **Dynamic Typography & Text Animation.** Renders using `BrownieStencil` (fallback to `ArchivoBlack`). Displays animated word tokens that light up on the Call (`Dim` &rarr; `Paper`), flips to **"HONK IT BACK"** (`Mustard`), turns words **Green** on rhythmic hit (`ShowHonkAccepted`), stamps red **"FAIL!"** on mistake, and punches streak counters. |
+| `GameUI.cs` | **Dynamic Typography & Accessibility UI.** Renders using `BrownieStencil` (fallback to `ArchivoBlack`). Displays animated word tokens that light up on the Call (`Dim` &rarr; `Paper`), flips to **"HONK IT BACK"** (`Mustard`), turns words **Green** on rhythmic hit (`ShowHonkAccepted`), stamps red **"FAIL!"** on mistake, announces tempo upgrades (**"SPEED UP! 140 BPM"**), punches streak counters, and provides Metronome Accessibility toggle buttons on Title and HUD (default OFF, toggle via click or `[M]`). |
 | `ProceduralAudio.cs` | Synthesizes placeholder horns, crash noise, metronome clicks, and pitch-scaled engine rumbling. |
 
 ---

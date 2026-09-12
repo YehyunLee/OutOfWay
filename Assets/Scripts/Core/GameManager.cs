@@ -29,6 +29,10 @@ namespace OutOfWay
         public GameUI UI;
         public MusicConductor Music;
 
+        [Header("Tempo Progression")]
+        [Tooltip("Scores at which tempo upgrades to 140 BPM (index 1) and 150 BPM (index 2).")]
+        public int[] TempoMilestones = { 4, 8 };
+
         string _failReason = "HIT";
         int _honkFrame = -1;
 
@@ -59,7 +63,11 @@ namespace OutOfWay
             Bus.StartDriving();
             Rhythm.ResetState();
             Spawner.ResetSpawner();
-            if (Music != null) Music.RestoreBedVolume();
+            if (Music != null)
+            {
+                Music.ResetToStartingTier();
+                Music.RestoreBedVolume();
+            }
             ProceduralAudio.Instance.PlayEngine(true);
             UI.ShowPlaying();
         }
@@ -114,10 +122,34 @@ namespace OutOfWay
                 PlayerPrefs.SetInt("OutOfWay.Best", Best);
             }
 
+            CheckTempoUpgrade();
+
             ProceduralAudio.Instance.Success();
             UI.ShowClear(Score, Rhythm.LastHitWasPerfect);
             Spawner.OnResolved();
             Rhythm.ResetState();
+        }
+
+        void CheckTempoUpgrade()
+        {
+            if (Music == null || Music.TierCount <= 1) return;
+
+            int targetTier = 0;
+            for (int i = TempoMilestones.Length - 1; i >= 0; i--)
+            {
+                if (Score >= TempoMilestones[i])
+                {
+                    targetTier = i + 1;
+                    break;
+                }
+            }
+
+            if (targetTier > Music.CurrentTierIndex && targetTier < Music.TierCount)
+            {
+                Music.SetTier(targetTier);
+                if (UI != null)
+                    UI.ShowBanner($"SPEED UP! {Music.Bpm:0} BPM", 2.4f);
+            }
         }
 
         void OnRhythmFail(string reason)

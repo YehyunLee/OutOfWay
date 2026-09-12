@@ -17,9 +17,17 @@ namespace OutOfWay
         public GameObject StreetLamp;
 
         [Header("Music")]
-        public float Bpm = 100f;
+        public float Bpm = 130f;
         public bool MetronomeClicks;
         public AudioClip BackgroundBed;
+
+        [Header("Tempo Tracks (130, 140, 150 BPM)")]
+        public AudioClip Music130;
+        public AudioClip Metronome130;
+        public AudioClip Music140;
+        public AudioClip Metronome140;
+        public AudioClip Music150;
+        public AudioClip Metronome150;
 
         [Tooltip("Chant rhythms. Leave empty to use the built-in placeholder set.")]
         public PhraseLibrary Phrases;
@@ -104,7 +112,17 @@ namespace OutOfWay
             music.Bpm = Bpm;
             music.MetronomeClicks = MetronomeClicks;
             music.BackgroundBed = BackgroundBed;
+            if (Music130 != null || Music140 != null || Music150 != null)
+            {
+                music.Tiers = new[]
+                {
+                    new TempoTier(130, Music130, Metronome130),
+                    new TempoTier(140, Music140 != null ? Music140 : Music130, Metronome140 != null ? Metronome140 : Metronome130),
+                    new TempoTier(150, Music150 != null ? Music150 : Music130, Metronome150 != null ? Metronome150 : Metronome130)
+                };
+            }
             music.Music = music.gameObject.AddComponent<AudioSource>();
+            music.MetronomeSource = music.gameObject.AddComponent<AudioSource>();
             music.PhraseSource = music.gameObject.AddComponent<AudioSource>();
             music.PhraseSource.playOnAwake = false;
             music.PhraseSource.spatialBlend = 0f;

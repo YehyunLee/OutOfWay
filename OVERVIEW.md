@@ -353,7 +353,7 @@ flowchart TD
 | **Roadway width and tile alignment** | `CityKit.cs` | `StandardRoadWidth = 8.2f`, `FindRoad()` |
 | **Street trees and pedestrian spawning** | `CityKit.cs` | `PlantTrees()`, `PlacePedestrians()`, tree height (~5.8m), pedestrian height (~3.4m) |
 | **Obstacle vehicle scale (Car, Ambulance, Bike)** | `VehicleFactory.cs` | `MakeCar()` (1.55x), `MakeAmbulance()` (1.5x), `MakeBike()` (1.45x) |
-| **Camera distance, height, and punch intensity** | `GameBootstrap.cs` / `CameraRig.cs` | `CameraOffset` (`0, 4.25, -4.8`), `CameraLookAhead` (`0, 1.6, 22`), `Rig.Punch(...)` |
+| **Camera distance, height, and punch intensity** | `GameBootstrap.cs` / `CameraRig.cs` | `CameraOffset` (`0, 5.8, -1.8`), `CameraLookAhead` (`0, 1.0, 24`), `Rig.Punch(...)` |
 
 ---
 

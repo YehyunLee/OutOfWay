@@ -48,8 +48,8 @@ namespace OutOfWay
         public PhraseLibrary Phrases;
 
         [Header("Camera Tuning")]
-        public Vector3 CameraOffset = new(0f, 4.25f, -4.8f);
-        public Vector3 CameraLookAhead = new(0f, 1.6f, 22f);
+        public Vector3 CameraOffset = new(0f, 5.8f, -1.8f);
+        public Vector3 CameraLookAhead = new(0f, 1.0f, 24f);
 
         [Header("Run")]
         [Tooltip("Seconds between the crash and the run restarting on its own.")]
@@ -60,6 +60,7 @@ namespace OutOfWay
 
         const string PreviewName = "DesignerStreet";
         bool _playBooted;
+        CameraRig _rig;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -86,6 +87,15 @@ namespace OutOfWay
         {
             if (Application.isPlaying)
                 BootPlay();
+        }
+
+        void Update()
+        {
+            if (_rig != null)
+            {
+                _rig.Offset = CameraOffset;
+                _rig.LookAhead = CameraLookAhead;
+            }
         }
 
         void BootPlay()
@@ -144,6 +154,7 @@ namespace OutOfWay
             rig.Target = bus.transform;
             rig.Offset = CameraOffset;
             rig.LookAhead = CameraLookAhead;
+            _rig = rig;
 
 #if UNITY_EDITOR
             if (HonkSound == null)

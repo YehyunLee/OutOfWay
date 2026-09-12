@@ -114,7 +114,13 @@ namespace OutOfWay
         public static void UseImported(GameObject root)
         {
             foreach (var r in root.GetComponentsInChildren<Renderer>(true))
-                r.sharedMaterial = FromImported(r.sharedMaterial);
+            {
+                var mats = r.sharedMaterials;
+                if (mats == null || mats.Length == 0) continue;
+                for (int i = 0; i < mats.Length; i++)
+                    mats[i] = FromImported(mats[i]);
+                r.sharedMaterials = mats;
+            }
         }
 
         public static Material FromImported(Material source)
@@ -131,6 +137,23 @@ namespace OutOfWay
             else color = source.color;
 
             Texture tex = source.HasProperty("_BaseMap") ? source.GetTexture("_BaseMap") : source.mainTexture;
+
+            // If untextured default Maya gray, apply palette mapped from material name
+            if (tex == null && Mathf.Abs(color.r - 0.5f) < 0.05f && Mathf.Abs(color.g - 0.5f) < 0.05f && Mathf.Abs(color.b - 0.5f) < 0.05f)
+            {
+                var n = source.name.ToLowerInvariant();
+                if (n.Contains("lambert5") || n.Contains("street") || n.Contains("road"))
+                    color = new Color(0.24f, 0.25f, 0.27f);
+                else if (n.Contains("lambert6") || n.Contains("side") || n.Contains("walk") || n.Contains("curb"))
+                    color = new Color(0.82f, 0.81f, 0.78f);
+                else if (n.Contains("lambert3") || n.Contains("building"))
+                    color = new Color(0.86f, 0.48f, 0.35f);
+                else if (n.Contains("lambert4"))
+                    color = new Color(0.35f, 0.58f, 0.65f);
+                else if (n.Contains("lambert7") || n.Contains("lamp") || n.Contains("pole"))
+                    color = new Color(0.18f, 0.18f, 0.20f);
+            }
+
             var mat = Make(color, null, tex);
             mat.name = source.name + " (URP)";
             Imported[id] = mat;

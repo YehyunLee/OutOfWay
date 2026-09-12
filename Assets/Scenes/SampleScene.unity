@@ -475,6 +475,7 @@ MonoBehaviour:
   Buildings: {fileID: 919132149155446097, guid: 3cf72c2607c4d4ce3a40b94833976c4d, type: 3}
   Street: {fileID: 919132149155446097, guid: 2b66aac392a6e49f09b6d9797d1d8c49, type: 3}
   Bus: {fileID: 919132149155446097, guid: a4c8e2b17f9d4e6a8b0c1d2e3f4a5b6c, type: 3}
+  StreetLamp: {fileID: 919132149155446097, guid: c36e7b88042c46e9bd99accaa35718c9, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

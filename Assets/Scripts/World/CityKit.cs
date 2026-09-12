@@ -4,7 +4,8 @@ namespace OutOfWay
 {
     /// <summary>
     /// Places the designer FBX as the looping street tile.
-    /// StreetAndBuildings is the block. Buildings is mirrored onto the empty sidewalk.
+    /// StreetAndBuildings / FullScene is the complete block.
+    /// Also supports modular Street + Buildings + StreetLamp.
     /// </summary>
     public static class CityKit
     {
@@ -16,19 +17,21 @@ namespace OutOfWay
         static GameObject _block;
         static GameObject _buildings;
         static GameObject _street;
+        static GameObject _lamp;
         static float _scale = 1f;
         static bool _tried;
 
-        public static void Bind(GameObject block, GameObject buildings, GameObject street)
+        public static void Bind(GameObject block, GameObject buildings, GameObject street, GameObject lamp = null)
         {
             _block = block;
             _buildings = buildings;
             _street = street;
+            _lamp = lamp;
             _tried = true;
             Ready = _block != null || _street != null;
             if (!Ready)
             {
-                Debug.LogWarning("CityKit: assign StreetAndBuildings (and Buildings) on OutOfWay.");
+                Debug.LogWarning("CityKit: assign StreetAndBuildings or Street on OutOfWay.");
                 return;
             }
 
@@ -38,7 +41,7 @@ namespace OutOfWay
         public static void Load()
         {
             if (_tried) return;
-            Bind(null, null, null);
+            Bind(null, null, null, null);
         }
 
         public static void Place(Transform tile)
@@ -46,12 +49,23 @@ namespace OutOfWay
             Load();
             if (!Ready) return;
 
-            var block = Spawn(_block != null ? _block : _street, tile, Vector3.one);
+            var basePrefab = _block != null ? _block : _street;
+            var block = Spawn(basePrefab, tile, Vector3.one);
             AlignRoad(block, tile);
 
-            if (_buildings == null) return;
-            var row = Spawn(_buildings, tile, new Vector3(-1f, 1f, 1f));
-            MatchStreet(row, block);
+            // If using separate modular street + buildings
+            if (_block == null && _buildings != null)
+            {
+                var bRow = Spawn(_buildings, tile, Vector3.one);
+                AlignRoad(bRow, tile);
+            }
+
+            // If lamp is provided separately and not already in the block
+            if (_lamp != null && _block == null)
+            {
+                var lamp = Spawn(_lamp, tile, Vector3.one);
+                AlignRoad(lamp, tile);
+            }
         }
 
         static GameObject Spawn(GameObject prefab, Transform tile, Vector3 sign)
@@ -68,15 +82,7 @@ namespace OutOfWay
         static void AlignRoad(GameObject go, Transform tile)
         {
             var road = RoadBounds(go);
-            var all = Combined(go);
-            go.transform.position += new Vector3(-road.center.x, -all.min.y, tile.position.z - road.min.z);
-        }
-
-        static void MatchStreet(GameObject row, GameObject block)
-        {
-            var buildings = Combined(row);
-            var street = Combined(block);
-            row.transform.position += new Vector3(0f, -buildings.min.y, street.min.z - buildings.min.z);
+            go.transform.position += new Vector3(-road.center.x, -road.min.y, tile.position.z - road.min.z);
         }
 
         static void MeasureScale(GameObject prefab)
@@ -94,9 +100,29 @@ namespace OutOfWay
 
         static Bounds RoadBounds(GameObject go)
         {
-            var plane = FindNamed(go.transform, "plane");
-            var renderer = plane != null ? plane.GetComponent<Renderer>() : null;
+            var road = FindRoad(go.transform);
+            var renderer = road != null ? road.GetComponent<Renderer>() : null;
             return renderer != null ? renderer.bounds : Combined(go);
+        }
+
+        static Transform FindRoad(Transform root)
+        {
+            // Prefer renderer named "street" or "road" (excluding "lamp", "side", "building")
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                var n = r.name.ToLowerInvariant();
+                if ((n == "street" || n.Contains("road") || n == "plane") &&
+                    !n.Contains("lamp") && !n.Contains("side") && !n.Contains("building"))
+                    return r.transform;
+            }
+            // Fallback: any renderer containing "street" that is not a lamp
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                var n = r.name.ToLowerInvariant();
+                if (n.Contains("street") && !n.Contains("lamp"))
+                    return r.transform;
+            }
+            return null;
         }
 
         static void Strip(GameObject root)
@@ -116,19 +142,6 @@ namespace OutOfWay
 
             foreach (var col in root.GetComponentsInChildren<Collider>(true))
                 Object.DestroyImmediate(col);
-        }
-
-        static Transform FindNamed(Transform t, string part)
-        {
-            if (t.name.ToLowerInvariant().Contains(part) && t.GetComponent<Renderer>() != null)
-                return t;
-            foreach (Transform c in t)
-            {
-                var found = FindNamed(c, part);
-                if (found != null) return found;
-            }
-
-            return null;
         }
 
         static Bounds Combined(GameObject go)

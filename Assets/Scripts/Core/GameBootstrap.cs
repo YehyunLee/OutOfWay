@@ -14,6 +14,7 @@ namespace OutOfWay
         public GameObject Buildings;
         public GameObject Street;
         public GameObject Bus;
+        public GameObject StreetLamp;
 
         [Header("Music")]
         public float Bpm = 100f;
@@ -67,7 +68,7 @@ namespace OutOfWay
 
             Look.Init();
             StyleWorld();
-            CityKit.Bind(StreetAndBuildings, Buildings, Street);
+            CityKit.Bind(StreetAndBuildings, Buildings, Street, StreetLamp);
 
             var preview = transform.Find(PreviewName);
             if (preview != null) preview.gameObject.SetActive(false);
@@ -138,7 +139,7 @@ namespace OutOfWay
             if (transform.Find(PreviewName) != null) return;
 
             Look.Init();
-            CityKit.Bind(StreetAndBuildings, Buildings, Street);
+            CityKit.Bind(StreetAndBuildings, Buildings, Street, StreetLamp);
             if (!CityKit.Ready) return;
 
             var holder = new GameObject(PreviewName).transform;

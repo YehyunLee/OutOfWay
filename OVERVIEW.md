@@ -10,7 +10,7 @@ Unity 6 (URP) bus-driver rhythm game. Open `Assets/Scenes/SampleScene`. Designer
 OutOfWay/
 ├── Assets/
 │   ├── Scenes/SampleScene.unity     The game scene (camera, light, volume, OutOfWay).
-│   ├── Art/                         Designer FBX: Street, Buildings, StreetAndBuildings
+│   ├── Art/                         Designer FBX: FullScene, Buildings, StreetAndSides, StreetLamp, SM_Bus
 │   ├── Scripts/
 │   │   ├── Core/                    Game start, state, music clock
 │   │   ├── Gameplay/                Bus, obstacles, honk rhythm
@@ -55,7 +55,7 @@ OutOfWay/
 | File | Role |
 |---|---|
 | `EndlessCity.cs` | Recycles the designer FBX street in front of the bus. No generated landscape. |
-| `CityKit.cs` | Instances `StreetAndBuildings` / `Street` / `Buildings` and mirrors buildings onto the empty sidewalk. |
+| `CityKit.cs` | Instances the designer block (`FullScene` / `StreetAndBuildings` or modular pieces) with dual building rows and street lamps. |
 | `VehicleFactory.cs` | Player bus from `SM_Bus` when assigned; cars / bikes / ambulance are still primitives. |
 | `Look.cs` | URP materials for the bus fallback, obstacles, and imported FBX colors. |
 

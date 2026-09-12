@@ -58,7 +58,7 @@ namespace OutOfWay
             _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (_font == null) _font = Font.CreateDynamicFontFromOSFont(new[] { "Arial", "Helvetica", "Verdana" }, 64);
 
-            _title = Panel("Title", transform, new Color(0.05f, 0.06f, 0.07f, 0.42f));
+            _title = Panel("Title", transform, new Color(0.05f, 0.06f, 0.07f, 0.22f));
             Label(_title.transform, "OUT OF THE WAY", 118, Mustard, new Vector2(0, 160), 1400, 160, FontStyle.Bold);
             Label(_title.transform, "BUS DRIVER  ·  RHYTHM", 36, Paper, new Vector2(0, 52), 900, 50, FontStyle.Normal);
             Label(_title.transform, "They chant  GET  OUT  OF  THE WAY  —  honk the next beat.", 28, new Color(1f, 1f, 1f, 0.8f), new Vector2(0, -20), 1100, 40, FontStyle.Italic);
@@ -90,7 +90,7 @@ namespace OutOfWay
             _honkButton = CircleButton(_hud.transform, "HONK", new Vector2(0, -420), 210);
             _honkButton.onClick.AddListener(() => GameManager.Instance.Honk());
 
-            _fail = Panel("Fail", transform, new Color(0.04f, 0.03f, 0.03f, 0.72f));
+            _fail = Panel("Fail", transform, new Color(0.04f, 0.03f, 0.03f, 0.35f));
             Label(_fail.transform, "DRIVER'S LICENSE", 36, Paper, new Vector2(0, 150), 800, 48, FontStyle.Bold);
             Label(_fail.transform, "REVOKED", 110, Stamp, new Vector2(0, 40), 1100, 140, FontStyle.Bold);
             _failReason = Label(_fail.transform, "", 30, Paper, new Vector2(0, -70), 800, 40, FontStyle.Normal);

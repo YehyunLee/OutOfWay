@@ -90,7 +90,7 @@ namespace OutOfWay
             Build.Box(root, "Glass", new Vector3(0f, 1.4f, 2.18f), new Vector3(1.7f, 0.6f, 0.08f), Look.GlassMat);
             Build.Box(root, "LightBar", new Vector3(0f, 1.95f, 0.2f), new Vector3(1.2f, 0.16f, 0.45f), Look.DarkMat);
             var red = Build.Box(root, "SirenR", new Vector3(-0.35f, 2.08f, 0.2f), new Vector3(0.4f, 0.14f, 0.36f), Look.AmbulanceRedMat);
-            var blue = Build.Box(root, "SirenB", new Vector3(0.35f, 2.08f, 0.2f), new Vector3(0.4f, 0.14f, 0.36f), Look.Make(new Color(0.15f, 0.35f, 0.95f), 0.5f, 0.1f, new Color(0.2f, 0.4f, 1.4f)));
+            var blue = Build.Box(root, "SirenB", new Vector3(0.35f, 2.08f, 0.2f), new Vector3(0.4f, 0.14f, 0.36f), Look.Make(new Color(0.2f, 0.45f, 1f), new Color(0.3f, 0.5f, 1.6f)));
             Wheel(root, "WFL", new Vector3(-0.95f, 0.32f, 1.3f), 0.32f);
             Wheel(root, "WFR", new Vector3(0.95f, 0.32f, 1.3f), 0.32f);
             Wheel(root, "WRL", new Vector3(-0.95f, 0.32f, -1.3f), 0.32f);

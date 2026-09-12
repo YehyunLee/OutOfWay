@@ -78,9 +78,9 @@ namespace OutOfWay
     public class CameraRig : MonoBehaviour
     {
         public Transform Target;
-        public Vector3 Offset = new(0f, 5.2f, -10.5f);
-        public Vector3 LookAhead = new(0f, 1.4f, 10f);
-        public float Follow = 6f;
+        public Vector3 Offset = new(0f, 3.5f, -8.2f);
+        public Vector3 LookAhead = new(0f, 1.15f, 14f);
+        public float Follow = 8f;
 
         float _shake;
 

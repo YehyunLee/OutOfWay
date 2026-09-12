@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace OutOfWay
 {
@@ -36,9 +37,15 @@ namespace OutOfWay
                 camGo.tag = "MainCamera";
             }
 
-            cam.transform.position = bus.transform.position + new Vector3(0f, 5.2f, -10.5f);
-            cam.fieldOfView = 58f;
-            cam.farClipPlane = 280f;
+            cam.transform.position = bus.transform.position + new Vector3(0f, 3.5f, -8.2f);
+            cam.fieldOfView = 62f;
+            cam.nearClipPlane = 0.2f;
+            cam.farClipPlane = 180f;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Look.Sky;
+            var urpCam = cam.GetUniversalAdditionalCameraData();
+            if (urpCam != null)
+                urpCam.renderPostProcessing = true;
             var rig = cam.GetComponent<CameraRig>() ?? cam.gameObject.AddComponent<CameraRig>();
             rig.Target = bus.transform;
 
@@ -72,21 +79,17 @@ namespace OutOfWay
 
         static void StyleWorld()
         {
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = Look.Fog;
-            RenderSettings.fogDensity = 0.011f;
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.62f, 0.74f, 0.86f);
-            RenderSettings.ambientEquatorColor = new Color(0.55f, 0.52f, 0.45f);
-            RenderSettings.ambientGroundColor = new Color(0.22f, 0.24f, 0.18f);
+            RenderSettings.fog = false;
+            RenderSettings.skybox = null;
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.92f, 0.88f, 0.80f);
 
             var sun = FindAnyObjectByType<Light>();
             if (sun != null)
             {
-                sun.color = new Color(1f, 0.93f, 0.78f);
-                sun.intensity = 1.35f;
-                sun.transform.rotation = Quaternion.Euler(38f, -25f, 0f);
+                sun.color = new Color(1f, 0.95f, 0.82f);
+                sun.intensity = 1.6f;
+                sun.transform.rotation = Quaternion.Euler(42f, -20f, 0f);
             }
         }
     }

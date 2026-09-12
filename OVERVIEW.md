@@ -44,8 +44,10 @@ OutOfWay/
 | File | Role |
 |---|---|
 | `BusController.cs` | Bus rolls forward on its own and speeds up. Camera follow. Crash stop. |
-| `RhythmDirector.cs` | **Main rhythm loop.** 4 cue beats (GET / OUT / OF / THE WAY) then a honk window on beat 5. |
-| `ObstacleSpawner.cs` | Spawns a car / bike / ambulance far enough ahead for those 5 beats. |
+| `RhythmDirector.cs` | **Main rhythm loop.** Call-and-response phrase player with tolerance window. |
+| `PhrasePattern.cs` | ScriptableObject defining word timings, tolerances, and clips. |
+| `PhraseLibrary.cs` | Pattern pool (Even, Rush, Drag, Stutter, Hold, Swing) with fallback defaults. |
+| `ObstacleSpawner.cs` | Spawns a car / bike / ambulance far enough ahead for the phrase duration. |
 | `ObstacleController.cs` | On success the blocker swerves off the road. Ambulance siren blink. |
 
 ### World
@@ -105,11 +107,11 @@ flowchart TD
 
 Only one obstacle at a time.
 
-1. Spawner places a blocker far enough that the bus will reach it in **5 beats**.
-2. Beats 1–4: on-screen words **GET / OUT / OF / THE WAY** (this is where the vocal will go).
-3. Beat 5: honk window. Space, click, gamepad A, or the HONK button.
-4. **Hit the window** → obstacle dodges, score goes up, next spawn after a short gap.
-5. **Too early, late, or silent** → crash → license revoked.
+1. Spawner picks a phrase pattern and places a blocker far enough for the total chant + response time.
+2. **Call:** Words light up across the screen to the rhythm ("Get Out Of The Way").
+3. **Response:** Text turns mustard ("HONK IT BACK"). Player echoes the rhythm with honks.
+4. **Hit on time:** Each word turns green as accepted. All hit -> obstacle swerves off, streak increases.
+5. **Too early, late, or silent:** Text stamps red "FAIL!", bus crashes -> license revoked.
 
 Honk with no active phrase just plays the horn. Does not fail the run.
 

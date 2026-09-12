@@ -56,8 +56,11 @@ namespace OutOfWay
             int seed = Random.Range(0, 9999);
             _active = VehicleFactory.MakeObstacle(kind, _holder, seed);
 
-            float beats = 5.2f;
-            float travel = Mathf.Max(38f, _bus.Speed * (beats * MusicConductor.Instance.BeatInterval) + 10f);
+            // Place them so the bus arrives around the time the call-and-response resolves.
+            var pattern = _rhythm.PeekNext();
+            float tempo = Mathf.Max(0.1f, MusicConductor.Instance.TempoScale);
+            float seconds = pattern != null ? pattern.TotalDuration / tempo : 5f;
+            float travel = Mathf.Max(38f, _bus.Speed * seconds + 10f);
             _active.transform.position = new Vector3(0f, 0f, _bus.transform.position.z + travel);
             _rhythm.BeginPhrase();
         }

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace OutOfWay
 {
@@ -14,10 +13,14 @@ namespace OutOfWay
     {
         public static GameManager Instance { get; private set; }
 
+        [Tooltip("Seconds between the crash and the run restarting on its own.")]
+        public float RestartDelay = 3f;
+
         public GameState State { get; private set; } = GameState.Title;
         public bool IsPlaying => State == GameState.Playing;
         public int Score { get; private set; }
         public int Best { get; private set; }
+        public int Streak { get; private set; }
 
         public BusController Bus;
         public CameraRig Rig;
@@ -40,18 +43,23 @@ namespace OutOfWay
             Rhythm.Success += OnCleared;
             Rhythm.Failed += OnRhythmFail;
             Rhythm.CueBeat += (i, word) => UI.ShowCue(i, word);
-            Rhythm.HonkWindowOpened += () => UI.ShowHonkWindow();
+            Rhythm.ResponseOpened += () => UI.ShowResponse();
+            Rhythm.HonkAccepted += OnHonkAccepted;
         }
 
         public void StartRun()
         {
             if (State == GameState.Playing) return;
+            // Clears any revoke/restart still pending from the last crash, which would otherwise kill this run.
+            CancelInvoke();
             State = GameState.Playing;
             Score = 0;
+            Streak = 0;
             _failReason = "HIT";
             Bus.StartDriving();
             Rhythm.ResetState();
             Spawner.ResetSpawner();
+            if (Music != null) Music.RestoreBedVolume();
             ProceduralAudio.Instance.PlayEngine(true);
             UI.ShowPlaying();
         }
@@ -87,6 +95,13 @@ namespace OutOfWay
             Fail("YOU HIT THEM");
         }
 
+        void OnHonkAccepted(int index)
+        {
+            UI.ShowHonkAccepted(index);
+            Streak++;
+            UI.ShowStreak(Streak);
+        }
+
         void OnCleared()
         {
             if (State != GameState.Playing) return;
@@ -109,9 +124,11 @@ namespace OutOfWay
         {
             if (State != GameState.Playing) return;
             _failReason = reason;
+            Streak = 0;
             // Stay doomed — the bus keeps rolling into the obstacle for the hit.
             // If they somehow never collide (bike already aside), revoke on a short timeout.
             UI.ShowMiss(reason);
+            UI.ShowStreak(0);
             Invoke(nameof(RevokeIfStillPlaying), 2.4f);
         }
 
@@ -133,6 +150,7 @@ namespace OutOfWay
             ProceduralAudio.Instance.Crash();
             if (Music != null) Music.SetBedVolume(0.22f);
             Invoke(nameof(StampRevoked), 0.45f);
+            Invoke(nameof(Retry), Mathf.Max(0.6f, RestartDelay));
         }
 
         void StampRevoked()
@@ -141,9 +159,15 @@ namespace OutOfWay
             UI.ShowRevoked(_failReason, Score, Best);
         }
 
+        /// <summary>
+        /// Rebuilds the run in place. The world is generated procedurally and the road recycles
+        /// around the bus, so there is nothing to reload — the bus just drives on from here.
+        /// </summary>
         public void Retry()
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            CancelInvoke();
+            State = GameState.Title;
+            StartRun();
         }
 
         void Update()

@@ -15,6 +15,7 @@ namespace OutOfWay
         Transform[] _wheels;
         float _shake;
         Vector3 _originEuler;
+        bool _originCaptured;
 
         public void CollectWheels()
         {
@@ -26,10 +27,18 @@ namespace OutOfWay
 
         public void StartDriving()
         {
+            // Captured once — a restart can happen mid-jolt, and that rotation must not become the new rest pose.
+            if (!_originCaptured)
+            {
+                _originEuler = transform.eulerAngles;
+                _originCaptured = true;
+            }
+
             Running = true;
             Crashed = false;
             Speed = StartSpeed;
-            _originEuler = transform.eulerAngles;
+            _shake = 0f;
+            transform.eulerAngles = _originEuler;
         }
 
         public void Stop()
@@ -78,8 +87,8 @@ namespace OutOfWay
     public class CameraRig : MonoBehaviour
     {
         public Transform Target;
-        public Vector3 Offset = new(0f, 4.4f, -10.5f);
-        public Vector3 LookAhead = new(0f, 1.4f, 16f);
+        public Vector3 Offset = new(0f, 3.5f, -8.2f);
+        public Vector3 LookAhead = new(0f, 1.15f, 14f);
         public float Follow = 8f;
 
         float _shake;

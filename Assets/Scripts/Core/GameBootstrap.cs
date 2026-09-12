@@ -19,7 +19,16 @@ namespace OutOfWay
         public float Bpm = 100f;
         public bool MetronomeClicks;
         public AudioClip BackgroundBed;
-        public AudioClip GetOutOfTheWayPhrase;
+
+        [Tooltip("Chant rhythms. Leave empty to use the built-in placeholder set.")]
+        public PhraseLibrary Phrases;
+
+        [Header("Run")]
+        [Tooltip("Seconds between the crash and the run restarting on its own.")]
+        public float RestartDelay = 3f;
+
+        [Tooltip("Multiplies every pattern's hit window. Raise it to make the whole game more forgiving.")]
+        [Range(0.25f, 4f)] public float ToleranceScale = 1f;
 
         const string PreviewName = "DesignerStreet";
         bool _playBooted;
@@ -93,13 +102,16 @@ namespace OutOfWay
             var music = Build.Empty("Music", transform).gameObject.AddComponent<MusicConductor>();
             music.Bpm = Bpm;
             music.MetronomeClicks = MetronomeClicks;
-            music.GetOutOfTheWayPhrase = GetOutOfTheWayPhrase;
             music.BackgroundBed = BackgroundBed;
             music.Music = music.gameObject.AddComponent<AudioSource>();
+            music.PhraseSource = music.gameObject.AddComponent<AudioSource>();
+            music.PhraseSource.playOnAwake = false;
+            music.PhraseSource.spatialBlend = 0f;
             music.SetupBed();
 
             var rhythm = gameObject.AddComponent<RhythmDirector>();
-            rhythm.Bind(music);
+            rhythm.ToleranceScale = ToleranceScale;
+            rhythm.Bind(music, Phrases != null ? Phrases : PhraseLibrary.CreateDefault());
 
             var spawner = gameObject.AddComponent<ObstacleSpawner>();
             spawner.Bind(bus, rhythm);
@@ -113,6 +125,7 @@ namespace OutOfWay
             game.Spawner = spawner;
             game.UI = ui;
             game.Music = music;
+            game.RestartDelay = RestartDelay;
             game.Wire();
 
             audio.PlayEngine(false);

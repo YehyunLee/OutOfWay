@@ -46,6 +46,10 @@ namespace OutOfWay
         public AudioSource MetronomeSource;
         public AudioSource PhraseSource;
 
+        [Header("Word Sound Effects")]
+        [Tooltip("Audio clips for the chant words: [0] Get, [1] Out, [2] Of, [3] The, [4] Way")]
+        public AudioClip[] WordClips;
+
         [Header("Current State")]
         public float Bpm = 130f;
         public bool MetronomeClicks = false;
@@ -149,6 +153,26 @@ namespace OutOfWay
             MetronomeSource.playOnAwake = false;
             MetronomeSource.spatialBlend = 0f;
             MetronomeSource.loop = true;
+
+            if (PhraseSource == null)
+            {
+                PhraseSource = gameObject.AddComponent<AudioSource>();
+            }
+            PhraseSource.playOnAwake = false;
+            PhraseSource.spatialBlend = 0f;
+            PhraseSource.volume = 1f;
+
+            if (WordClips == null || WordClips.Length == 0)
+            {
+                WordClips = new[]
+                {
+                    Resources.Load<AudioClip>("Audio/Word_Get") ?? Resources.Load<AudioClip>("Audio/get"),
+                    Resources.Load<AudioClip>("Audio/Word_Out") ?? Resources.Load<AudioClip>("Audio/out"),
+                    Resources.Load<AudioClip>("Audio/Word_Of") ?? Resources.Load<AudioClip>("Audio/of"),
+                    Resources.Load<AudioClip>("Audio/Word_The") ?? Resources.Load<AudioClip>("Audio/the"),
+                    Resources.Load<AudioClip>("Audio/Word_Way") ?? Resources.Load<AudioClip>("Audio/way")
+                };
+            }
 
             // Accessibility preference: default is false (OFF)
             MetronomeEnabled = PlayerPrefs.GetInt("OutOfWay.Metronome", 0) == 1;
@@ -266,6 +290,39 @@ namespace OutOfWay
             PhraseSource.pitch = TempoScale;
             PhraseSource.time = 0f;
             PhraseSource.Play();
+        }
+
+        public void PlayWord(int index, AudioClip customClip = null, float volume = 1f)
+        {
+            var clip = customClip;
+            if (clip == null && WordClips != null && index >= 0 && index < WordClips.Length)
+                clip = WordClips[index];
+
+            if (clip != null && PhraseSource != null)
+            {
+                PhraseSource.pitch = TempoScale;
+                PhraseSource.PlayOneShot(clip, volume);
+            }
+        }
+
+        public void PlayWord(string word, float volume = 1f)
+        {
+            if (string.IsNullOrEmpty(word)) return;
+            int idx = word.ToLowerInvariant() switch
+            {
+                "get" => 0,
+                "out" => 1,
+                "of" => 2,
+                "the" => 3,
+                "way" => 4,
+                _ => -1
+            };
+            if (idx >= 0) PlayWord(idx, null, volume);
+        }
+
+        public void StopChant()
+        {
+            if (PhraseSource != null) PhraseSource.Stop();
         }
 
         public void Tick(bool accent)

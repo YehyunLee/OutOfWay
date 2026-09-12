@@ -12,6 +12,9 @@ namespace OutOfWay
         [Tooltip("The recorded line. Leave empty to fall back to the placeholder metronome.")]
         public AudioClip Clip;
 
+        [Tooltip("Individual audio clips for each word in Words. Falls back to MusicConductor.WordClips if empty.")]
+        public AudioClip[] WordClips;
+
         [Tooltip("Name for this rhythm, inspector only.")]
         public string Label = "Even";
 

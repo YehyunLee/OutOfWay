@@ -57,7 +57,11 @@ namespace OutOfWay
         /// <summary>Chooses the next rhythm without starting it, so the spawner can size the run-up.</summary>
         public PhrasePattern PeekNext()
         {
-            if (_next == null) _next = _library.Pick();
+            if (_next == null)
+            {
+                int score = GameManager.Instance != null ? GameManager.Instance.Score : 0;
+                _next = _library != null ? _library.Pick(score) : null;
+            }
             return _next;
         }
 
@@ -84,6 +88,7 @@ namespace OutOfWay
             CueIndex = -1;
             HonksAccepted = 0;
             _firstHonkAt = -1f;
+            if (_music != null) _music.StopChant();
         }
 
         public void NotifyHonk()
@@ -124,7 +129,15 @@ namespace OutOfWay
             while (CueIndex + 1 < Pattern.Count && _clock >= Pattern.WordTimes[CueIndex + 1])
             {
                 CueIndex++;
-                if (!_clipDriven) _music.Tick(CueIndex == Pattern.Count - 1);
+                if (!_clipDriven)
+                {
+                    AudioClip custom = (Pattern.WordClips != null && CueIndex < Pattern.WordClips.Length) ? Pattern.WordClips[CueIndex] : null;
+                    if (_music != null)
+                    {
+                        _music.PlayWord(CueIndex, custom);
+                        _music.Tick(CueIndex == Pattern.Count - 1);
+                    }
+                }
                 CueBeat?.Invoke(CueIndex, Pattern.Words[CueIndex]);
             }
 
@@ -167,6 +180,7 @@ namespace OutOfWay
         void Fail(string reason)
         {
             Phase = RhythmPhase.Resolved;
+            if (_music != null) _music.StopChant();
             Failed?.Invoke(reason);
         }
     }

@@ -29,6 +29,13 @@ namespace OutOfWay
         public AudioClip Music150;
         public AudioClip Metronome150;
 
+        [Header("Word Sound Effects (Optional inspector overrides)")]
+        public AudioClip WordGet;
+        public AudioClip WordOut;
+        public AudioClip WordOf;
+        public AudioClip WordThe;
+        public AudioClip WordWay;
+
         [Tooltip("Chant rhythms. Leave empty to use the built-in placeholder set.")]
         public PhraseLibrary Phrases;
 
@@ -120,6 +127,10 @@ namespace OutOfWay
                     new TempoTier(140, Music140 != null ? Music140 : Music130, Metronome140 != null ? Metronome140 : Metronome130),
                     new TempoTier(150, Music150 != null ? Music150 : Music130, Metronome150 != null ? Metronome150 : Metronome130)
                 };
+            }
+            if (WordGet != null || WordOut != null || WordOf != null || WordThe != null || WordWay != null)
+            {
+                music.WordClips = new[] { WordGet, WordOut, WordOf, WordThe, WordWay };
             }
             music.Music = music.gameObject.AddComponent<AudioSource>();
             music.MetronomeSource = music.gameObject.AddComponent<AudioSource>();

@@ -41,11 +41,11 @@ ModelImporter:
     sortHierarchyByName: 1
     preBakeConvexCollisionMesh: 0
     preBakeTriangleCollisionMesh: 0
-    importPhysicalCameras: 1
+    importPhysicalCameras: 0
     importVisibility: 1
     importBlendShapes: 1
-    importCameras: 1
-    importLights: 1
+    importCameras: 0
+    importLights: 0
     nodeNameCollisionStrategy: 1
     fileIdsGeneration: 2
     swapUVChannels: 0

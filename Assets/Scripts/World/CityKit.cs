@@ -3,20 +3,15 @@ using UnityEngine;
 namespace OutOfWay
 {
     /// <summary>
-    /// Designer Maya block: Street, Buildings, StreetAndBuildings in Resources/Art.
-    /// Scaled so the road matches the bus, then tiled along Z. Buildings in the FBX
-    /// sit on one sidewalk, so a mirrored copy fills the other side.
+    /// Places the designer FBX as the looping street tile.
+    /// StreetAndBuildings is the block. Buildings is mirrored onto the empty sidewalk.
     /// </summary>
     public static class CityKit
     {
-        public const string StreetAndBuildingsPath = "Art/StreetAndBuildings";
-        public const string BuildingsPath = "Art/Buildings";
-        public const string StreetPath = "Art/Street";
         public const float TargetRoadWidth = 8.2f;
 
         public static bool Ready { get; private set; }
         public static float TileLength { get; private set; } = 32f;
-        public static float WalkX { get; private set; } = 5.1f;
 
         static GameObject _block;
         static GameObject _buildings;
@@ -33,7 +28,7 @@ namespace OutOfWay
             Ready = _block != null || _street != null;
             if (!Ready)
             {
-                Debug.LogWarning("CityKit: assign StreetAndBuildings / Buildings / Street on the OutOfWay object. Falling back to cubes.");
+                Debug.LogWarning("CityKit: assign StreetAndBuildings (and Buildings) on OutOfWay.");
                 return;
             }
 
@@ -46,84 +41,62 @@ namespace OutOfWay
             Bind(null, null, null);
         }
 
-        public static void Place(Transform tile, int seed)
+        public static void Place(Transform tile)
         {
             Load();
             if (!Ready) return;
 
-            var kit = Spawn(_block != null ? _block : _street, tile, new Vector3(1f, 1f, 1f), new Vector3(0f, 0f, TileLength * 0.5f), seed);
-            PaintStreet(kit);
+            var block = Spawn(_block != null ? _block : _street, tile, Vector3.one);
+            AlignRoad(block, tile);
 
             if (_buildings == null) return;
-
-            var origin = new Vector3(0f, 0f, TileLength * 0.5f);
-            Spawn(_buildings, tile, new Vector3(-1f, 1f, 1f), origin, seed + 17);
-
-            float shift = TileLength * 0.42f;
-            if (shift > 10f)
-            {
-                var back = origin + new Vector3(0f, 0f, -shift);
-                Spawn(_buildings, tile, new Vector3(1f, 1f, 1f), back, seed + 33);
-                Spawn(_buildings, tile, new Vector3(-1f, 1f, 1f), back, seed + 51);
-            }
+            var row = Spawn(_buildings, tile, new Vector3(-1f, 1f, 1f));
+            MatchStreet(row, block);
         }
 
-        static GameObject Spawn(GameObject prefab, Transform tile, Vector3 sign, Vector3 localPos, int seed)
+        static GameObject Spawn(GameObject prefab, Transform tile, Vector3 sign)
         {
             var go = Object.Instantiate(prefab, tile);
             Strip(go);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
             go.transform.localScale = new Vector3(sign.x * _scale, sign.y * _scale, sign.z * _scale);
-            go.transform.localPosition = localPos;
-            SitOnGround(go);
-            PaintBuildings(go, seed);
+            Look.UseImported(go);
             return go;
+        }
+
+        static void AlignRoad(GameObject go, Transform tile)
+        {
+            var road = RoadBounds(go);
+            var all = Combined(go);
+            go.transform.position += new Vector3(-road.center.x, -all.min.y, tile.position.z - road.min.z);
+        }
+
+        static void MatchStreet(GameObject row, GameObject block)
+        {
+            var buildings = Combined(row);
+            var street = Combined(block);
+            row.transform.position += new Vector3(0f, -buildings.min.y, street.min.z - buildings.min.z);
         }
 
         static void MeasureScale(GameObject prefab)
         {
             var temp = Object.Instantiate(prefab);
             temp.hideFlags = HideFlags.HideAndDontSave;
-            var plane = FindNamed(temp.transform, "plane");
-            var road = plane != null ? plane.GetComponent<Renderer>() : null;
-            float roadW = road != null ? road.bounds.size.x : Combined(temp).size.x * 0.29f;
+            var road = RoadBounds(temp);
+            float roadW = road.size.x;
             if (roadW < 0.0001f) roadW = 1f;
             _scale = TargetRoadWidth / roadW;
             temp.transform.localScale = Vector3.one * _scale;
-            TileLength = Mathf.Max(24f, Combined(temp).size.z);
-            WalkX = TargetRoadWidth * 0.5f + 1.2f;
+            TileLength = Mathf.Max(8f, RoadBounds(temp).size.z);
             Object.DestroyImmediate(temp);
         }
 
-        static void SitOnGround(GameObject root)
+        static Bounds RoadBounds(GameObject go)
         {
-            var b = Combined(root);
-            if (b.size.sqrMagnitude < 0.0001f) return;
-            root.transform.position += new Vector3(0f, -b.min.y, 0f);
-        }
-
-        static void PaintStreet(GameObject root)
-        {
-            foreach (var r in root.GetComponentsInChildren<Renderer>())
-            {
-                string n = r.gameObject.name.ToLowerInvariant();
-                if (n.Contains("plane"))
-                    r.sharedMaterial = Look.RoadMat;
-                else if (n.Contains("pcube1") || n.Contains("pcube2"))
-                    r.sharedMaterial = Look.SidewalkMat;
-            }
-        }
-
-        static void PaintBuildings(GameObject root, int seed)
-        {
-            int i = 0;
-            foreach (var r in root.GetComponentsInChildren<Renderer>())
-            {
-                string n = r.gameObject.name.ToLowerInvariant();
-                if (n.Contains("plane") || n.Contains("pcube1") || n.Contains("pcube2"))
-                    continue;
-                r.sharedMaterial = (i % 2 == 0) ? Look.Facade(seed + i) : Look.Wall(seed + i);
-                i++;
-            }
+            var plane = FindNamed(go.transform, "plane");
+            var renderer = plane != null ? plane.GetComponent<Renderer>() : null;
+            return renderer != null ? renderer.bounds : Combined(go);
         }
 
         static void Strip(GameObject root)

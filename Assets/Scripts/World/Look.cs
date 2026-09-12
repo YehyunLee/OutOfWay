@@ -1,15 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace OutOfWay
 {
-    /// <summary>Shared colors, generated textures, and URP materials.</summary>
+    /// <summary>URP unlit materials for vehicles and imported meshes.</summary>
     public static class Look
     {
-        public static readonly Color Asphalt = new(0.18f, 0.18f, 0.20f);
-        public static readonly Color Lane = new(0.98f, 0.82f, 0.12f);
-        public static readonly Color Sidewalk = new(0.72f, 0.70f, 0.64f);
-        public static readonly Color Grass = new(0.34f, 0.62f, 0.28f);
-        public static readonly Color Curb = new(0.86f, 0.84f, 0.76f);
         public static readonly Color BusBody = new(0.96f, 0.76f, 0.12f);
         public static readonly Color BusStripe = new(0.10f, 0.38f, 0.42f);
         public static readonly Color BusDark = new(0.12f, 0.12f, 0.14f);
@@ -22,29 +18,6 @@ namespace OutOfWay
         public static readonly Color BikeFrame = new(0.12f, 0.12f, 0.14f);
         public static readonly Color Rider = new(0.18f, 0.40f, 0.72f);
         public static readonly Color Sky = new(0.55f, 0.80f, 0.98f);
-        public static readonly Color Hedge = new(0.16f, 0.55f, 0.22f);
-
-        public static readonly Color[] BuildingWalls =
-        {
-            new(0.94f, 0.58f, 0.36f),
-            new(0.98f, 0.90f, 0.72f),
-            new(0.88f, 0.38f, 0.28f),
-            new(0.98f, 0.95f, 0.88f),
-            new(0.38f, 0.58f, 0.82f),
-            new(0.82f, 0.50f, 0.28f),
-            new(0.58f, 0.74f, 0.42f),
-            new(0.92f, 0.72f, 0.52f)
-        };
-
-        public static readonly Color[] ShopFronts =
-        {
-            new(0.88f, 0.14f, 0.16f),
-            new(0.12f, 0.36f, 0.82f),
-            new(0.96f, 0.52f, 0.08f),
-            new(0.12f, 0.58f, 0.36f),
-            new(0.58f, 0.18f, 0.58f),
-            new(0.10f, 0.12f, 0.16f)
-        };
 
         public static readonly Color[] CarBodies =
         {
@@ -65,26 +38,14 @@ namespace OutOfWay
         public static Material ChromeMat;
         public static Material HeadlightMat;
         public static Material TaillightMat;
-        public static Material RoadMat;
-        public static Material SidewalkMat;
-        public static Material GrassMat;
-        public static Material CurbMat;
         public static Material AmbulanceMat;
         public static Material AmbulanceRedMat;
         public static Material BikeMat;
         public static Material RiderMat;
-        public static Material TrunkMat;
-        public static Material LeafMat;
-        public static Material HedgeMat;
-        public static Material DashMat;
-        public static Material WindowLitMat;
-        public static Material WindowDarkMat;
         public static Material[] CarMats;
-        public static Material[] WallMats;
-        public static Material[] FacadeMats;
-        public static Material[] ShopMats;
 
         static Shader _shader;
+        static readonly Dictionary<EntityId, Material> Imported = new();
 
         public static void Init()
         {
@@ -113,33 +74,10 @@ namespace OutOfWay
             AmbulanceRedMat = Make(AmbulanceRed, AmbulanceRed);
             BikeMat = Make(BikeFrame);
             RiderMat = Make(Rider);
-            TrunkMat = Make(new Color(0.45f, 0.28f, 0.14f));
-            LeafMat = Make(new Color(0.16f, 0.62f, 0.22f));
-            HedgeMat = Make(Hedge);
-            DashMat = Make(Lane);
-            WindowLitMat = Make(new Color(1f, 0.92f, 0.52f), new Color(1.2f, 1f, 0.45f));
-            WindowDarkMat = Make(new Color(0.10f, 0.16f, 0.28f));
-
-            RoadMat = Make(Asphalt, null, Textures.Road(), new Vector2(1f, 8f));
-            SidewalkMat = Make(Sidewalk, null, Textures.Noise(64, Sidewalk, 0.12f), Vector2.one * 4f);
-            GrassMat = Make(Grass, null, Textures.Noise(64, Grass, 0.18f), Vector2.one * 6f);
-            CurbMat = Make(Curb);
 
             CarMats = new Material[CarBodies.Length];
             for (int i = 0; i < CarBodies.Length; i++)
                 CarMats[i] = Make(CarBodies[i]);
-
-            WallMats = new Material[BuildingWalls.Length];
-            FacadeMats = new Material[BuildingWalls.Length];
-            for (int i = 0; i < BuildingWalls.Length; i++)
-            {
-                WallMats[i] = Make(BuildingWalls[i]);
-                FacadeMats[i] = Make(BuildingWalls[i], null, Textures.Facade(i * 97 + 3, BuildingWalls[i]));
-            }
-
-            ShopMats = new Material[ShopFronts.Length];
-            for (int i = 0; i < ShopFronts.Length; i++)
-                ShopMats[i] = Make(ShopFronts[i]);
         }
 
         public static Material Make(Color color, Color? emission = null, Texture tex = null, Vector2? tiling = null)
@@ -168,98 +106,35 @@ namespace OutOfWay
             mat.mainTexture = tex;
             if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
             if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
-            var scale = tiling ?? Vector2.one;
-            mat.mainTextureScale = scale;
+            mat.mainTextureScale = tiling ?? Vector2.one;
         }
 
         public static Material Car(int seed) => CarMats[Mathf.Abs(seed) % CarMats.Length];
-        public static Material Wall(int seed) => WallMats[Mathf.Abs(seed) % WallMats.Length];
-        public static Material Facade(int seed) => FacadeMats[Mathf.Abs(seed) % FacadeMats.Length];
-        public static Material Shop(int seed) => ShopMats[Mathf.Abs(seed) % ShopMats.Length];
-    }
 
-    public static class Textures
-    {
-        public static Texture2D Road()
+        public static void UseImported(GameObject root)
         {
-            const int w = 64;
-            const int h = 256;
-            var tex = new Texture2D(w, h) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Repeat };
-            var asphalt = Look.Asphalt;
-            var yellow = Look.Lane;
-            var white = new Color(0.92f, 0.92f, 0.90f);
-
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    float n = (Mathf.PerlinNoise(x * 0.18f, y * 0.11f) - 0.5f) * 0.08f;
-                    var c = asphalt + new Color(n, n, n);
-                    if (x <= 4 || x >= w - 5) c = Color.Lerp(c, white, 0.9f);
-                    bool dash = (y % 36) < 20;
-                    if (dash && x >= 29 && x <= 34) c = yellow;
-                    tex.SetPixel(x, y, c);
-                }
-            }
-
-            tex.Apply();
-            return tex;
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+                r.sharedMaterial = FromImported(r.sharedMaterial);
         }
 
-        public static Texture2D Facade(int seed, Color wall)
+        public static Material FromImported(Material source)
         {
-            var rng = new System.Random(seed);
-            const int cols = 8;
-            const int rows = 12;
-            const int cw = 8;
-            const int ch = 10;
-            var tex = new Texture2D(cols * cw, rows * ch)
-            {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp
-            };
+            if (Lit == null) Init();
+            if (source == null) return Lit ?? Make(Color.gray);
+            var id = source.GetEntityId();
+            if (Imported.TryGetValue(id, out var cached) && cached != null)
+                return cached;
 
-            var mortar = wall * 0.72f;
-            var windowOff = new Color(0.08f, 0.12f, 0.20f);
-            var windowOn = new Color(1f, 0.90f, 0.48f);
+            Color color = Color.gray;
+            if (source.HasProperty("_BaseColor")) color = source.GetColor("_BaseColor");
+            else if (source.HasProperty("_Color")) color = source.GetColor("_Color");
+            else color = source.color;
 
-            for (int row = 0; row < rows; row++)
-            {
-                for (int col = 0; col < cols; col++)
-                {
-                    bool edge = row == 0 || col == 0 || col == cols - 1;
-                    bool lit = !edge && rng.NextDouble() > 0.12;
-                    var fill = !lit ? wall : (rng.NextDouble() > 0.45 ? windowOn : windowOff);
-
-                    for (int py = 0; py < ch; py++)
-                    {
-                        for (int px = 0; px < cw; px++)
-                        {
-                            bool border = px == 0 || py == 0;
-                            tex.SetPixel(col * cw + px, row * ch + py, border ? mortar : fill);
-                        }
-                    }
-                }
-            }
-
-            tex.Apply();
-            return tex;
-        }
-
-        public static Texture2D Noise(int size, Color baseColor, float amount)
-        {
-            var tex = new Texture2D(size, size) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Repeat };
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float n = (Mathf.PerlinNoise(x * 0.22f, y * 0.22f) - 0.5f) * amount;
-                    tex.SetPixel(x, y, baseColor + new Color(n, n, n));
-                }
-            }
-
-            tex.Apply();
-            return tex;
+            Texture tex = source.HasProperty("_BaseMap") ? source.GetTexture("_BaseMap") : source.mainTexture;
+            var mat = Make(color, null, tex);
+            mat.name = source.name + " (URP)";
+            Imported[id] = mat;
+            return mat;
         }
     }
 

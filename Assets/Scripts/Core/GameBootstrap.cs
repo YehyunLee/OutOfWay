@@ -130,7 +130,7 @@ namespace OutOfWay
 
             var holder = new GameObject(PreviewName).transform;
             holder.SetParent(transform, false);
-            CityKit.Place(holder, 11);
+            CityKit.Place(holder);
         }
 
         static void StyleWorld()

@@ -76,30 +76,14 @@ namespace OutOfWay
             b = CombinedBounds(visual);
             visual.transform.position += new Vector3(-b.center.x, -b.min.y, -b.center.z);
 
-            PaintDesignerBus(visual);
+            Look.UseImported(visual);
             foreach (var t in visual.GetComponentsInChildren<Transform>())
             {
                 string n = t.name.ToLowerInvariant();
                 if (n.Contains("clider") || n.Contains("collider"))
-                {
-                    t.gameObject.SetActive(false);
                     continue;
-                }
-
                 if (n.Contains("wheel"))
                     t.gameObject.AddComponent<SpinWithSpeed>();
-            }
-        }
-
-        static void PaintDesignerBus(GameObject visual)
-        {
-            foreach (var r in visual.GetComponentsInChildren<Renderer>())
-            {
-                string n = r.gameObject.name.ToLowerInvariant();
-                if (n.Contains("wheel"))
-                    r.sharedMaterial = Look.DarkMat;
-                else
-                    r.sharedMaterial = Look.BusMat;
             }
         }
 
@@ -199,23 +183,12 @@ namespace OutOfWay
             Build.Box(root, "Seat", new Vector3(0f, 0.95f, -0.28f), new Vector3(0.16f, 0.08f, 0.3f), Look.DarkMat);
             if (rider)
             {
-                var clothes = Look.Shop(seed);
+                var clothes = Look.Car(seed);
                 Build.Cylinder(root, "Rider", new Vector3(0f, 1.18f, -0.02f), new Vector3(0.34f, 0.4f, 0.34f), clothes);
                 Build.Sphere(root, "Head", new Vector3(0f, 1.68f, 0.1f), 0.3f, Look.RiderMat);
             }
 
             return FinishObstacle(root, ObstacleKind.Bicycle, new Vector3(0.9f, 1.9f, 1.7f));
-        }
-
-        public static ObstacleController Park(ObstacleController obstacle)
-        {
-            obstacle.Parked = true;
-            obstacle.enabled = false;
-            var col = obstacle.GetComponent<Collider>();
-            if (col != null) col.enabled = false;
-            foreach (var spin in obstacle.GetComponentsInChildren<SpinWithSpeed>())
-                spin.enabled = false;
-            return obstacle;
         }
 
         static ObstacleController FinishObstacle(Transform root, ObstacleKind kind, Vector3 colliderSize)

@@ -52,10 +52,10 @@ OutOfWay/
 
 | File | Role |
 |---|---|
-| `EndlessCity.cs` | Recycles street tiles in front of the bus. Uses designer FBX when imported, otherwise cubes. |
-| `CityKit.cs` | Loads `StreetAndBuildings` / `Buildings` / `Street`, scales the road to the bus, mirrors buildings onto both sidewalks. |
-| `VehicleFactory.cs` | Builds bus, cars, bikes, ambulance from primitives. |
-| `Look.cs` | Colors, generated textures, materials, mesh helpers (`Build.Box` etc.). |
+| `EndlessCity.cs` | Recycles the designer FBX street in front of the bus. No generated landscape. |
+| `CityKit.cs` | Instances `StreetAndBuildings` / `Street` / `Buildings` and mirrors buildings onto the empty sidewalk. |
+| `VehicleFactory.cs` | Player bus from `SM_Bus` when assigned; cars / bikes / ambulance are still primitives. |
+| `Look.cs` | URP materials for the bus fallback, obstacles, and imported FBX colors. |
 
 ### Audio / UI
 
@@ -72,6 +72,7 @@ OutOfWay/
 | `Art/Street.fbx` | Designer road + sidewalks. |
 | `Art/Buildings.fbx` | Designer building row (one sidewalk in Maya). |
 | `Art/StreetAndBuildings.fbx` | Combined street block used as the looping tile. |
+| `Art/SM_Bus.fbx` | Player bus. |
 
 ---
 
@@ -125,7 +126,7 @@ Honk with no active phrase just plays the horn. Does not fail the run.
 **Art**
 
 - Street tiles: `Assets/Art/*.fbx`, assigned on the `OutOfWay` object in SampleScene.
-- `CityKit` instances those meshes and mirrors buildings onto both sidewalks. It does not rebuild the street from cubes when the FBX slots are filled.
+- Landscape is those meshes only (plus a mirrored `Buildings` row). No cube grass, lamps, or props.
 
 **Feel / timing**
 

@@ -152,6 +152,12 @@ namespace OutOfWay
                     color = new Color(0.35f, 0.58f, 0.65f);
                 else if (n.Contains("lambert7") || n.Contains("lamp") || n.Contains("pole"))
                     color = new Color(0.18f, 0.18f, 0.20f);
+                else if (n.Contains("bus"))
+                    color = BusBody;
+                else if (n.Contains("wheelclinder") || n.Contains("clider") || n.Contains("wheelc"))
+                    color = new Color(0.18f, 0.18f, 0.20f);
+                else if (n.Contains("wheel"))
+                    color = BusDark;
             }
 
             var mat = Make(color, null, tex);

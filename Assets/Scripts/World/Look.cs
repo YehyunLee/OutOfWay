@@ -66,9 +66,9 @@ namespace OutOfWay
 
         public static void Init()
         {
-            if (Lit != null) return;
-
             LoadTextures();
+
+            if (Lit != null && _shader != null) return;
 
             _shader = Shader.Find("Universal Render Pipeline/Unlit")
                       ?? Shader.Find("Universal Render Pipeline/Simple Lit")
@@ -99,9 +99,15 @@ namespace OutOfWay
                 CarMats[i] = Make(CarBodies[i]);
         }
 
+        public static void ClearCache()
+        {
+            ImportedByTag.Clear();
+            _texturesLoaded = false;
+        }
+
         public static void LoadTextures()
         {
-            if (_texturesLoaded) return;
+            if (_texturesLoaded && TexStreet != null && TexBuildingsSide2 != null) return;
             _texturesLoaded = true;
 
             if (TexStreet == null) TexStreet = Resources.Load<Texture2D>("Textures/Street_BaseColor");
@@ -174,16 +180,20 @@ namespace OutOfWay
 
             foreach (var r in root.GetComponentsInChildren<Renderer>(true))
             {
+                string tag = r.name;
+                if (r.transform.parent != null && r.transform.parent != root.transform)
+                    tag = $"{r.transform.parent.name} {r.name}";
+
                 var mats = r.sharedMaterials;
                 if (mats == null || mats.Length == 0)
                 {
                     // FBX exported without materials — resolve directly from object name
-                    r.sharedMaterial = FromImported(null, r.name);
+                    r.sharedMaterial = FromImported(null, tag);
                     continue;
                 }
 
                 for (int i = 0; i < mats.Length; i++)
-                    mats[i] = FromImported(mats[i], r.name);
+                    mats[i] = FromImported(mats[i], tag);
                 r.sharedMaterials = mats;
             }
         }
@@ -195,16 +205,27 @@ namespace OutOfWay
         static Color PaletteFor(string rawName, Color fallback)
         {
             var n = (rawName ?? string.Empty).ToLowerInvariant();
-            if (n.Contains("lambert5") || n.Contains("street") || n.Contains("road"))
-                return new Color(0.24f, 0.25f, 0.27f);
-            if (n.Contains("lambert6") || n.Contains("side") || n.Contains("walk") || n.Contains("curb"))
-                return new Color(0.82f, 0.81f, 0.78f);
-            if (n.Contains("lambert3") || n.Contains("building"))
-                return new Color(0.86f, 0.48f, 0.35f);
-            if (n.Contains("lambert4"))
-                return new Color(0.35f, 0.58f, 0.65f);
-            if (n.Contains("lambert7") || n.Contains("lamp") || n.Contains("pole"))
+
+            // 1. Street Lamp / Pole / Lantern (must check BEFORE 'street')
+            if (n.Contains("lamp") || n.Contains("lantern") || n.Contains("lambert7"))
                 return new Color(0.18f, 0.18f, 0.20f);
+
+            // 2. Building Side 3 (must check BEFORE 'side')
+            if (n.Contains("buildings_side_3") || n.Contains("building_side_3") || n.Contains("building 3") || n.Contains("lambert4"))
+                return new Color(0.35f, 0.58f, 0.65f);
+
+            // 3. Building Side 2 & generic buildings (must check BEFORE 'side')
+            if (n.Contains("buildings_side_2") || n.Contains("building_side_2") || n.Contains("building 2") || n.Contains("building") || n.Contains("lambert3") || n.Contains("pcube"))
+                return new Color(0.86f, 0.48f, 0.35f);
+
+            // 4. Sidewalks / Curbs / Walkways (must NOT match buildings)
+            if (n.Contains("side") || n.Contains("walk") || n.Contains("curb") || n.Contains("pavement") || n.Contains("lambert6"))
+                return new Color(0.82f, 0.81f, 0.78f);
+
+            // 5. Street / Roadway
+            if (n.Contains("street") || n.Contains("road") || n.Contains("asphalt") || n.Contains("lambert5"))
+                return new Color(0.24f, 0.25f, 0.27f);
+
             if (n.Contains("bus"))
                 return BusBody;
             if (n.Contains("wheelclinder") || n.Contains("clider") || n.Contains("wheelc"))
@@ -236,30 +257,35 @@ namespace OutOfWay
             // If no embedded texture, match against scene, character, and foliage textures
             if (tex == null)
             {
-                if (combined.Contains("street") || combined.Contains("road") || combined.Contains("lambert5"))
+                // 1. Street Lamp / Pole / Lantern (must check BEFORE 'street' because 'street_lamp_pole' contains 'street')
+                if (combined.Contains("lamp") || combined.Contains("lantern") || combined.Contains("lambert7"))
                 {
-                    tex = TexStreet;
-                    color = tex != null ? Color.white : new Color(0.24f, 0.25f, 0.27f);
+                    tex = TexLamp;
+                    color = tex != null ? Color.white : new Color(0.18f, 0.18f, 0.20f);
                 }
-                else if (combined.Contains("side") || combined.Contains("walk") || combined.Contains("curb") || combined.Contains("lambert6"))
-                {
-                    tex = TexSides;
-                    color = tex != null ? Color.white : new Color(0.82f, 0.81f, 0.78f);
-                }
-                else if (combined.Contains("buildings_side_3") || combined.Contains("building 3") || combined.Contains("lambert4"))
+                // 2. Building Side 3 (must check BEFORE 'side' because 'buildings_side_3' contains 'side')
+                else if (combined.Contains("buildings_side_3") || combined.Contains("building_side_3") || combined.Contains("building 3") || combined.Contains("lambert4"))
                 {
                     tex = TexBuildingsSide3;
                     color = tex != null ? Color.white : new Color(0.35f, 0.58f, 0.65f);
                 }
-                else if (combined.Contains("building") || combined.Contains("lambert3"))
+                // 3. Building Side 2 & generic Buildings / Blocks (must check BEFORE 'side')
+                else if (combined.Contains("buildings_side_2") || combined.Contains("building_side_2") || combined.Contains("building 2") || combined.Contains("building") || combined.Contains("lambert3") || combined.Contains("pcube"))
                 {
                     tex = TexBuildingsSide2;
                     color = tex != null ? Color.white : new Color(0.86f, 0.48f, 0.35f);
                 }
-                else if (combined.Contains("lamp") || combined.Contains("pole") || combined.Contains("lambert7"))
+                // 4. Sidewalks / Curbs / Walkway (must NOT match buildings)
+                else if (combined.Contains("side") || combined.Contains("walk") || combined.Contains("curb") || combined.Contains("pavement") || combined.Contains("lambert6"))
                 {
-                    tex = TexLamp;
-                    color = tex != null ? Color.white : new Color(0.18f, 0.18f, 0.20f);
+                    tex = TexSides;
+                    color = tex != null ? Color.white : new Color(0.82f, 0.81f, 0.78f);
+                }
+                // 5. Street / Roadway
+                else if (combined.Contains("street") || combined.Contains("road") || combined.Contains("asphalt") || combined.Contains("lambert5"))
+                {
+                    tex = TexStreet;
+                    color = tex != null ? Color.white : new Color(0.24f, 0.25f, 0.27f);
                 }
                 else if (combined.Contains("leaves") || combined.Contains("leaf") || combined.Contains("foliage"))
                 {

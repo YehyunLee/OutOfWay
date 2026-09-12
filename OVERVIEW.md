@@ -85,6 +85,7 @@ OutOfWay/
 │   │       ├── Word_Of.mp3 (of.mp3)      Vocal sound effect for "OF"
 │   │       ├── Word_The.mp3 (the.mp3)    Vocal sound effect for "THE"
 │   │       ├── Word_Way.mp3 (way.mp3)    Vocal sound effect for "WAY"
+│   │       ├── honk.mp3                  Crisp bus horn sound effect (Spacebar / HUD button)
 │   │       └── BackgroundBed.mp3         Legacy 100 BPM bed fallback
 │   ├── Licenses/                         Font attribution and commercial licenses
 │   ├── Settings/                         Universal Render Pipeline (URP) assets and volume profiles
@@ -132,7 +133,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 ### 3.2 State Management & Progression (`GameManager.cs`)
 - **Location:** `Assets/Scripts/Core/GameManager.cs`
 - **State Machine (`GameState`):**
-  - `Title`: Bus parked, engine rumbling, metronome toggle accessible, prompt: *"SPACE OR HONK TO DRIVE"*.
+  - `Title`: Bus parked, engine rumbling, metronome toggle accessible, prompt: *"HONK TO DRIVE"*.
   - `Playing`: Bus accelerates forward along +Z, obstacles spawn ahead, rhythm director active.
   - `Failed`: Bus spinout, crash SFX, red *"DRIVER'S LICENSE REVOKED"* card with score breakdown, automatic restart after `RestartDelay` seconds.
 - **In-Place Restarts:** The game **never** calls `SceneManager.LoadScene()`. Restarting simply calls `Bus.StartDriving()`, clears existing obstacles, resets `RhythmDirector`, and the road continues seamlessly from the bus's current position.
@@ -340,6 +341,7 @@ flowchart TD
 | **Downbeat / Start Beat audio alignment offset** | `MusicConductor.cs` | `StartBeatOffset = 0.022f` |
 | **Start Beat sync & obstacle spawn timing** | `ObstacleSpawner.cs` | `OnStartBeat()`, `_pendingSpawn`, `FirstDelay` |
 | **Metronome click volume or bed volume** | `MusicConductor.cs` | `BedVolume = 0.58f`, `MetronomeVolume = 0.65f` |
+| **Bus honk sound effect & volume** | `ProceduralAudio.cs` / `GameBootstrap.cs` | `HonkSound`, `Audio/honk.mp3`, `Honk()` |
 | **Vocal word sound effects (`get`, `out`, `of`, `the`, `way`)** | `MusicConductor.cs` / `GameBootstrap.cs` | `WordClips`, `WordGet`, `WordOut`, `WordOf`, `WordThe`, `WordWay` |
 | **Rhythm difficulty tiers & score thresholds** | `PhraseLibrary.cs` | `Pick(score)` &rarr; Tier 1 (0-2), Tier 2 (3-5), Tier 3 (6-9), Tier 4 (10+) |
 | **Procedural random beat generation & musical gaps** | `PhraseLibrary.cs` | `GenerateRandomPattern()` &rarr; `gapOptions`, tolerance clamps |

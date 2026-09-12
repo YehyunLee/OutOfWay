@@ -91,7 +91,7 @@ namespace OutOfWay
             Label(_title.transform, "BUS DRIVER RHYTHM", 26, Paper, new Vector2(0, 376), 800, 36, FontStyle.Normal);
             Image(_title.transform, "BottomBar", new Color(0.05f, 0.05f, 0.06f, 0.78f), new Vector2(0, -430), new Vector2(1920, 220));
             Label(_title.transform, "They chant Get Out Of The Way.  Honk it back — once per word, same rhythm.", 26, new Color(1f, 1f, 1f, 0.82f), new Vector2(0, -390), 1400, 40, FontStyle.Italic);
-            Label(_title.transform, "SPACE  OR  HONK  TO  DRIVE", 32, Mustard, new Vector2(0, -450), 900, 44, FontStyle.Bold);
+            Label(_title.transform, "HONK  TO  DRIVE", 32, Mustard, new Vector2(0, -450), 900, 44, FontStyle.Bold);
 
             _titleMetroBtn = ToggleButton(_title.transform, "METRONOME: OFF", new Vector2(0, -290), new Vector2(280, 48), new Vector2(0.5f, 0.5f), out _titleMetroText, out _titleMetroImg);
             _titleMetroBtn.onClick.AddListener(() =>
@@ -128,7 +128,6 @@ namespace OutOfWay
             _honkRt = honk.GetComponent<RectTransform>();
             _honkImage = honk.GetComponent<Image>();
             honk.onClick.AddListener(() => GameManager.Instance.Honk());
-            Label(_hud.transform, "SPACE", 18, new Color(1f, 1f, 1f, 0.55f), new Vector2(0, 18), 200, 24, FontStyle.Bold);
 
             _fail = Panel("Fail", transform, new Color(0.02f, 0.02f, 0.03f, 0.45f));
             Chip(_fail.transform, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(760, 520));
@@ -138,7 +137,7 @@ namespace OutOfWay
             _failScore = Label(_fail.transform, "", 24, Mustard, new Vector2(0, -70), 600, 36, FontStyle.Bold);
             var retry = RectButton(_fail.transform, "TRY AGAIN", new Vector2(0, -170), new Vector2(280, 64));
             retry.onClick.AddListener(() => GameManager.Instance.Retry());
-            Label(_fail.transform, "RESTARTING  —  SPACE  TO  SKIP", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 420, 24, FontStyle.Normal);
+            Label(_fail.transform, "RESTARTING...", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 420, 24, FontStyle.Normal);
 
             UpdateMetronomeUI();
             if (MusicConductor.Instance != null)

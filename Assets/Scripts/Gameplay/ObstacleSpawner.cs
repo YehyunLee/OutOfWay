@@ -106,9 +106,8 @@ namespace OutOfWay
 
                 if (isAudioPlaying)
                 {
-                    // If OnStartBeat event didn't fire due to script execution order or frame hitch,
-                    // catch it here on IsStartBeatThisFrame, or use safety timeout
-                    if (conductor.IsStartBeatThisFrame || (Time.time - _pendingSince > 2.5f))
+                    // Catch start beat on IsStartBeatThisFrame if script update order differed
+                    if (conductor.IsStartBeatThisFrame)
                     {
                         _pendingSpawn = false;
                         Spawn();

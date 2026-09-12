@@ -79,6 +79,7 @@ namespace OutOfWay
 
             if (State == GameState.Title)
             {
+                ProceduralAudio.Instance.Honk();
                 StartRun();
                 return;
             }

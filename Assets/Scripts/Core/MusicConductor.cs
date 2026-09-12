@@ -128,29 +128,22 @@ namespace OutOfWay
                     SongTime += delta;
                 }
 
-                // Keep MetronomeSource in lockstep with Music loop
-                if (MetronomeSource != null && MetronomeSource.clip != null)
+                // Keep MetronomeSource in lockstep with Music loop and musical measures (BarInterval)
+                if (MetronomeSource != null && MetronomeSource.clip != null && BarInterval > 0.01f)
                 {
-                    // Detect loop wrap
-                    if (Music.time < _lastMusicTime)
-                    {
-                        MetronomeSource.time = 0f;
-                    }
                     _lastMusicTime = Music.time;
 
-                    // Periodic drift correction
-                    if (Time.unscaledTime - _lastSyncCheck > 0.25f)
+                    // Compute current phase within the 4-beat bar (measure)
+                    float effectiveMusicTime = Music.time - StartBeatOffset;
+                    while (effectiveMusicTime < 0f) effectiveMusicTime += BarInterval;
+                    float targetMetroTime = effectiveMusicTime % BarInterval;
+
+                    // Periodic sync & loop boundary correction:
+                    // Prevents metronome from playing trailing MP3 container padding (> BarInterval)
+                    // and eliminates any phase drift against the background music loop
+                    if (MetronomeSource.time >= BarInterval || Mathf.Abs(MetronomeSource.time - targetMetroTime) > 0.025f)
                     {
-                        _lastSyncCheck = Time.unscaledTime;
-                        float metroLen = MetronomeSource.clip.length;
-                        if (metroLen > 0.05f)
-                        {
-                            float targetTime = Music.time % metroLen;
-                            if (Mathf.Abs(MetronomeSource.time - targetTime) > 0.035f)
-                            {
-                                MetronomeSource.time = targetTime;
-                            }
-                        }
+                        MetronomeSource.time = targetMetroTime;
                     }
                 }
 
@@ -339,11 +332,11 @@ namespace OutOfWay
                 MetronomeSource.mute = !enabled;
                 MetronomeSource.volume = enabled ? MetronomeVolume : 0f;
 
-                if (enabled && Music != null && Music.isPlaying)
+                if (enabled && Music != null && Music.isPlaying && BarInterval > 0.01f)
                 {
-                    float metroLen = MetronomeSource.clip != null ? MetronomeSource.clip.length : 1f;
-                    if (metroLen > 0.05f)
-                        MetronomeSource.time = Music.time % metroLen;
+                    float effectiveMusicTime = Music.time - StartBeatOffset;
+                    while (effectiveMusicTime < 0f) effectiveMusicTime += BarInterval;
+                    MetronomeSource.time = effectiveMusicTime % BarInterval;
 
                     if (!MetronomeSource.isPlaying)
                         MetronomeSource.Play();

@@ -41,6 +41,9 @@ namespace OutOfWay
         public AudioClip WordThe;
         public AudioClip WordWay;
 
+        [Header("SFX (Optional inspector overrides)")]
+        public AudioClip HonkSound;
+
         [Tooltip("Chant rhythms. Leave empty to use the built-in placeholder set.")]
         public PhraseLibrary Phrases;
 
@@ -136,7 +139,14 @@ namespace OutOfWay
             var rig = cam.GetComponent<CameraRig>() ?? cam.gameObject.AddComponent<CameraRig>();
             rig.Target = bus.transform;
 
-            var audio = ProceduralAudio.Create(transform);
+#if UNITY_EDITOR
+            if (HonkSound == null)
+                HonkSound = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Audio/honk.mp3");
+#endif
+            if (HonkSound == null)
+                HonkSound = Resources.Load<AudioClip>("Audio/honk") ?? Resources.Load<AudioClip>("Audio/Honk");
+
+            var audio = ProceduralAudio.Create(transform, HonkSound);
             var music = Build.Empty("Music", transform).gameObject.AddComponent<MusicConductor>();
             music.Bpm = Bpm;
             music.MetronomeClicks = MetronomeClicks;

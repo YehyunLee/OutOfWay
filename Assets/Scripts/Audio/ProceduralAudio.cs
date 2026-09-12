@@ -2,10 +2,12 @@ using UnityEngine;
 
 namespace OutOfWay
 {
-    /// <summary>Placeholder SFX until the music track lands. Mute metronome on MusicConductor when you drop real audio in.</summary>
+    /// <summary>SFX audio engine. Plays real audio clips when available with procedural fallbacks.</summary>
     public class ProceduralAudio : MonoBehaviour
     {
         public static ProceduralAudio Instance { get; private set; }
+
+        public AudioClip HonkClip;
 
         AudioSource _oneshot;
         AudioSource _engine;
@@ -17,12 +19,22 @@ namespace OutOfWay
         AudioClip _revoked;
         AudioClip _engineLoop;
 
-        public static ProceduralAudio Create(Transform parent)
+        public static ProceduralAudio Create(Transform parent, AudioClip honkClip = null)
         {
             var t = Build.Empty("Audio", parent);
             var audio = t.gameObject.AddComponent<ProceduralAudio>();
+            audio.HonkClip = honkClip;
             audio.BuildSources();
             return audio;
+        }
+
+        public void SetHonkClip(AudioClip clip)
+        {
+            if (clip != null)
+            {
+                HonkClip = clip;
+                _honk = clip;
+            }
         }
 
         void BuildSources()
@@ -38,7 +50,20 @@ namespace OutOfWay
             _engine.spatialBlend = 0f;
             _engine.volume = 0.12f;
 
-            _honk = Horn("honk", 392f, 311f, 0.28f);
+            if (HonkClip != null)
+            {
+                _honk = HonkClip;
+            }
+            else
+            {
+                _honk = Resources.Load<AudioClip>("Audio/honk") ?? Resources.Load<AudioClip>("Audio/Honk");
+#if UNITY_EDITOR
+                if (_honk == null)
+                    _honk = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Audio/honk.mp3");
+#endif
+                if (_honk == null)
+                    _honk = Horn("honk", 392f, 311f, 0.28f);
+            }
             _click = Tone("click", 880f, 0.06f, 0.22f);
             _accent = Tone("accent", 1174f, 0.08f, 0.28f);
             _success = Chord("clear", new[] { 523f, 659f, 784f }, 0.32f, 0.2f);
@@ -57,7 +82,10 @@ namespace OutOfWay
         public void SetEngineSpeed(float normalized) =>
             _engine.pitch = Mathf.Lerp(0.75f, 1.35f, normalized);
 
-        public void Honk() => _oneshot.PlayOneShot(_honk, 0.9f);
+        public void Honk()
+        {
+            if (_honk != null) _oneshot.PlayOneShot(_honk, 1f);
+        }
         public void Click() => _oneshot.PlayOneShot(_click, 0.55f);
         public void Accent() => _oneshot.PlayOneShot(_accent, 0.7f);
         public void Success() => _oneshot.PlayOneShot(_success, 0.8f);

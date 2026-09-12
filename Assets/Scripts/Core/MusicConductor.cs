@@ -58,18 +58,49 @@ namespace OutOfWay
         [Tooltip("Playback rate for the chant / rhythm clock. Drives difficulty ramp and tempo progression.")]
         [Range(0.5f, 2f)] public float TempoScale = 1f;
 
+        [Header("Start Beat & Measure Sync")]
+        [Tooltip("Offset in seconds to the first downbeat/start beat in the audio loops (calibrated to ~0.022s).")]
+        public float StartBeatOffset = 0.022f;
+
         public bool MetronomeEnabled { get; private set; } = false;
 
         public event Action<bool> MetronomeToggled;
         public event Action<int, float> TierChanged;
+        public event Action<int> StartBeatTriggered;
 
         public float BeatInterval => 60f / Mathf.Max(40f, Bpm);
+        public float BarInterval => 4f * BeatInterval;
+
+        /// <summary>Continuous elapsed music playback time, unbroken across loops.</summary>
+        public float SongTime { get; private set; }
+
+        /// <summary>Current measure/bar index since the music began playing.</summary>
+        public int CurrentBar { get; private set; }
+
+        /// <summary>True for the single frame in which the audio crossed into a new bar / start beat.</summary>
+        public bool IsStartBeatThisFrame { get; private set; }
+
+        /// <summary>Estimated seconds until the next start beat (downbeat).</summary>
+        public float TimeUntilNextStartBeat
+        {
+            get
+            {
+                if (Music == null || !Music.isPlaying || BarInterval <= 0.01f) return 0f;
+                float effective = SongTime - StartBeatOffset;
+                if (effective < 0f) return -effective;
+                float rem = BarInterval - (effective % BarInterval);
+                return (rem >= BarInterval - 0.002f) ? 0f : rem;
+            }
+        }
+
         public float PhraseTime => PhraseSource != null ? PhraseSource.time : 0f;
         public bool PhrasePlaying => PhraseSource != null && PhraseSource.isPlaying;
         public static MusicConductor Instance { get; private set; }
 
         float _lastSyncCheck;
         float _lastMusicTime;
+        float _lastPlayhead;
+        int _lastReportedBar = -1;
 
         void Awake()
         {
@@ -80,28 +111,60 @@ namespace OutOfWay
         {
             if (PhraseSource != null) PhraseSource.pitch = TempoScale;
 
-            // Keep MetronomeSource in lockstep with Music loop
-            if (Music != null && Music.isPlaying && MetronomeSource != null && MetronomeSource.clip != null)
-            {
-                // Detect loop wrap
-                if (Music.time < _lastMusicTime)
-                {
-                    MetronomeSource.time = 0f;
-                }
-                _lastMusicTime = Music.time;
+            IsStartBeatThisFrame = false;
 
-                // Periodic drift correction
-                if (Time.unscaledTime - _lastSyncCheck > 0.25f)
+            if (Music != null && Music.isPlaying)
+            {
+                float playhead = Music.time;
+                float delta = playhead - _lastPlayhead;
+                if (delta < 0f && Music.clip != null)
                 {
-                    _lastSyncCheck = Time.unscaledTime;
-                    float metroLen = MetronomeSource.clip.length;
-                    if (metroLen > 0.05f)
+                    delta += Music.clip.length;
+                }
+                _lastPlayhead = playhead;
+
+                if (delta >= 0f && delta < 0.5f)
+                {
+                    SongTime += delta;
+                }
+
+                // Keep MetronomeSource in lockstep with Music loop
+                if (MetronomeSource != null && MetronomeSource.clip != null)
+                {
+                    // Detect loop wrap
+                    if (Music.time < _lastMusicTime)
                     {
-                        float targetTime = Music.time % metroLen;
-                        if (Mathf.Abs(MetronomeSource.time - targetTime) > 0.035f)
+                        MetronomeSource.time = 0f;
+                    }
+                    _lastMusicTime = Music.time;
+
+                    // Periodic drift correction
+                    if (Time.unscaledTime - _lastSyncCheck > 0.25f)
+                    {
+                        _lastSyncCheck = Time.unscaledTime;
+                        float metroLen = MetronomeSource.clip.length;
+                        if (metroLen > 0.05f)
                         {
-                            MetronomeSource.time = targetTime;
+                            float targetTime = Music.time % metroLen;
+                            if (Mathf.Abs(MetronomeSource.time - targetTime) > 0.035f)
+                            {
+                                MetronomeSource.time = targetTime;
+                            }
                         }
+                    }
+                }
+
+                // Check for new bar crossing (the Start Beat / downbeat of the bar)
+                if (BarInterval > 0.01f)
+                {
+                    float effectiveTime = SongTime - StartBeatOffset;
+                    int bar = effectiveTime >= 0f ? Mathf.FloorToInt(effectiveTime / BarInterval) : -1;
+                    if (bar > _lastReportedBar)
+                    {
+                        _lastReportedBar = bar;
+                        CurrentBar = bar;
+                        IsStartBeatThisFrame = true;
+                        StartBeatTriggered?.Invoke(bar);
                     }
                 }
             }
@@ -209,6 +272,12 @@ namespace OutOfWay
             Bpm = tier.Bpm;
             TempoScale = Bpm / 130f;
 
+            SongTime = 0f;
+            CurrentBar = 0;
+            _lastReportedBar = -1;
+            _lastPlayhead = 0f;
+            _lastMusicTime = 0f;
+
             bool wasMusicPlaying = Music != null && Music.isPlaying;
             bool wasMetroPlaying = MetronomeSource != null && MetronomeSource.isPlaying;
 
@@ -217,6 +286,7 @@ namespace OutOfWay
                 Music.clip = tier.Music;
                 Music.time = 0f;
                 _lastMusicTime = 0f;
+                _lastPlayhead = 0f;
                 if (wasMusicPlaying || !Music.isPlaying) Music.Play();
             }
 
@@ -231,6 +301,15 @@ namespace OutOfWay
 
             MetronomeClicks = false;
             TierChanged?.Invoke(CurrentTierIndex, Bpm);
+        }
+
+        public void ResetMusicClock()
+        {
+            SongTime = 0f;
+            CurrentBar = 0;
+            _lastReportedBar = -1;
+            _lastPlayhead = Music != null ? Music.time : 0f;
+            _lastMusicTime = _lastPlayhead;
         }
 
         public bool UpgradeTier()

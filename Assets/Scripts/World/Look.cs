@@ -44,12 +44,31 @@ namespace OutOfWay
         public static Material RiderMat;
         public static Material[] CarMats;
 
+        [Header("Scene & Character Textures")]
+        public static Texture2D TexStreet;
+        public static Texture2D TexSides;
+        public static Texture2D TexBuildingsSide2;
+        public static Texture2D TexBuildingsSide3;
+        public static Texture2D TexLamp;
+
+        public static Texture2D TexFemaleDress;
+        public static Texture2D TexFemaleSkin;
+        public static Texture2D TexFemaleHair;
+        public static Texture2D TexFemaleEyes;
+
+        public static Texture2D TexMaleShirt;
+        public static Texture2D TexMaleSkin;
+        public static Texture2D TexMaleEyes;
+
         static Shader _shader;
-        static readonly Dictionary<EntityId, Material> Imported = new();
+        static readonly Dictionary<string, Material> ImportedByTag = new();
+        static bool _texturesLoaded;
 
         public static void Init()
         {
             if (Lit != null) return;
+
+            LoadTextures();
 
             _shader = Shader.Find("Universal Render Pipeline/Unlit")
                       ?? Shader.Find("Universal Render Pipeline/Simple Lit")
@@ -78,6 +97,44 @@ namespace OutOfWay
             CarMats = new Material[CarBodies.Length];
             for (int i = 0; i < CarBodies.Length; i++)
                 CarMats[i] = Make(CarBodies[i]);
+        }
+
+        public static void LoadTextures()
+        {
+            if (_texturesLoaded) return;
+            _texturesLoaded = true;
+
+            if (TexStreet == null) TexStreet = Resources.Load<Texture2D>("Textures/Street_BaseColor");
+            if (TexSides == null) TexSides = Resources.Load<Texture2D>("Textures/Sides_BaseColor");
+            if (TexBuildingsSide2 == null) TexBuildingsSide2 = Resources.Load<Texture2D>("Textures/Buildings_side_2_BaseColor");
+            if (TexBuildingsSide3 == null) TexBuildingsSide3 = Resources.Load<Texture2D>("Textures/Buildings_side_3_BaseColor");
+            if (TexLamp == null) TexLamp = Resources.Load<Texture2D>("Textures/Lamp_BaseColor");
+
+            if (TexFemaleDress == null) TexFemaleDress = Resources.Load<Texture2D>("Textures/Female_Dress");
+            if (TexFemaleSkin == null) TexFemaleSkin = Resources.Load<Texture2D>("Textures/Female_Skin");
+            if (TexFemaleHair == null) TexFemaleHair = Resources.Load<Texture2D>("Textures/Female_Hair");
+            if (TexFemaleEyes == null) TexFemaleEyes = Resources.Load<Texture2D>("Textures/Female_Eyes");
+
+            if (TexMaleShirt == null) TexMaleShirt = Resources.Load<Texture2D>("Textures/Male_Shirt");
+            if (TexMaleSkin == null) TexMaleSkin = Resources.Load<Texture2D>("Textures/Male_Skin");
+            if (TexMaleEyes == null) TexMaleEyes = Resources.Load<Texture2D>("Textures/Male_Eyes");
+
+#if UNITY_EDITOR
+            if (TexStreet == null) TexStreet = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Street/full scene take 2_Street_BaseColor_ACEScg.png");
+            if (TexSides == null) TexSides = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Sides/full scene take 2_Sides_BaseColor_ACEScg.png");
+            if (TexBuildingsSide2 == null) TexBuildingsSide2 = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Buildings_side_2/full scene take 2_Buildings side 2_BaseColor_ACEScg.png");
+            if (TexBuildingsSide3 == null) TexBuildingsSide3 = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Buildings_side_3/full scene take 2_Buildings side 3_BaseColor_ACEScg.png");
+            if (TexLamp == null) TexLamp = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Textures/Lamp/full scene take 2_Lamp_BaseColor_ACEScg.png");
+
+            if (TexFemaleDress == null) TexFemaleDress = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Characters/SM_HumanFemale/SM_HumanFemale_M_Dress_01_BaseColor_ACEScg.png");
+            if (TexFemaleSkin == null) TexFemaleSkin = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Characters/SM_HumanFemale/SM_HumanFemale_M_Skin_01_BaseColor_ACEScg.png");
+            if (TexFemaleHair == null) TexFemaleHair = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Characters/SM_HumanFemale/SM_HumanFemale_M_Hair_01_BaseColor_ACEScg.png");
+            if (TexFemaleEyes == null) TexFemaleEyes = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Characters/SM_HumanFemale/SM_HumanFemale_M_Eyes_01_BaseColor_ACEScg.png");
+
+            if (TexMaleShirt == null) TexMaleShirt = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Characters/SM_HumanMale/SM_HumanMale_M_Shirt_01_BaseColor_ACEScg.png");
+            if (TexMaleSkin == null) TexMaleSkin = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Characters/SM_HumanMale/SM_HumanMale_M_Skin_01_BaseColor_ACEScg.png");
+            if (TexMaleEyes == null) TexMaleEyes = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Characters/SM_HumanMale/SM_HumanMale_M_Eyes_01_BaseColor_ACEScg.png");
+#endif
         }
 
         public static Material Make(Color color, Color? emission = null, Texture tex = null, Vector2? tiling = null)
@@ -113,13 +170,15 @@ namespace OutOfWay
 
         public static void UseImported(GameObject root)
         {
+            if (Lit == null) Init();
+
             foreach (var r in root.GetComponentsInChildren<Renderer>(true))
             {
                 var mats = r.sharedMaterials;
                 if (mats == null || mats.Length == 0)
                 {
-                    // FBX exported without materials — fall back to the object name.
-                    r.sharedMaterial = Make(PaletteFor(r.name, Color.gray));
+                    // FBX exported without materials — resolve directly from object name
+                    r.sharedMaterial = FromImported(null, r.name);
                     continue;
                 }
 
@@ -152,31 +211,94 @@ namespace OutOfWay
                 return new Color(0.18f, 0.18f, 0.20f);
             if (n.Contains("wheel"))
                 return BusDark;
+            if (n.Contains("leaves") || n.Contains("leaf") || n.Contains("foliage"))
+                return new Color(0.24f, 0.58f, 0.22f);
+            if (n.Contains("branche") || n.Contains("trunk") || n.Contains("bark") || n.Contains("wood"))
+                return new Color(0.36f, 0.24f, 0.16f);
             return fallback;
         }
 
         public static Material FromImported(Material source, string objectName = null)
         {
             if (Lit == null) Init();
-            if (source == null) return Lit ?? Make(Color.gray);
-            var id = source.GetEntityId();
-            if (Imported.TryGetValue(id, out var cached) && cached != null)
+
+            string matName = (source != null ? source.name : string.Empty).ToLowerInvariant();
+            string objName = (objectName ?? string.Empty).ToLowerInvariant();
+            string combined = $"{matName} {objName}".Trim();
+
+            string cacheKey = $"{matName}___{objName}";
+            if (ImportedByTag.TryGetValue(cacheKey, out var cached) && cached != null)
                 return cached;
 
-            Color color = Color.gray;
-            if (source.HasProperty("_BaseColor")) color = source.GetColor("_BaseColor");
-            else if (source.HasProperty("_Color")) color = source.GetColor("_Color");
-            else color = source.color;
+            Color color = Color.white;
+            Texture tex = source != null && source.HasProperty("_BaseMap") ? source.GetTexture("_BaseMap") : (source != null ? source.mainTexture : null);
 
-            Texture tex = source.HasProperty("_BaseMap") ? source.GetTexture("_BaseMap") : source.mainTexture;
-
-            // If untextured default Maya gray, map the palette from the material or object name.
-            if (tex == null && Mathf.Abs(color.r - 0.5f) < 0.05f && Mathf.Abs(color.g - 0.5f) < 0.05f && Mathf.Abs(color.b - 0.5f) < 0.05f)
-                color = PaletteFor($"{source.name} {objectName}", color);
+            // If no embedded texture, match against scene, character, and foliage textures
+            if (tex == null)
+            {
+                if (combined.Contains("street") || combined.Contains("road") || combined.Contains("lambert5"))
+                {
+                    tex = TexStreet;
+                    color = tex != null ? Color.white : new Color(0.24f, 0.25f, 0.27f);
+                }
+                else if (combined.Contains("side") || combined.Contains("walk") || combined.Contains("curb") || combined.Contains("lambert6"))
+                {
+                    tex = TexSides;
+                    color = tex != null ? Color.white : new Color(0.82f, 0.81f, 0.78f);
+                }
+                else if (combined.Contains("buildings_side_3") || combined.Contains("building 3") || combined.Contains("lambert4"))
+                {
+                    tex = TexBuildingsSide3;
+                    color = tex != null ? Color.white : new Color(0.35f, 0.58f, 0.65f);
+                }
+                else if (combined.Contains("building") || combined.Contains("lambert3"))
+                {
+                    tex = TexBuildingsSide2;
+                    color = tex != null ? Color.white : new Color(0.86f, 0.48f, 0.35f);
+                }
+                else if (combined.Contains("lamp") || combined.Contains("pole") || combined.Contains("lambert7"))
+                {
+                    tex = TexLamp;
+                    color = tex != null ? Color.white : new Color(0.18f, 0.18f, 0.20f);
+                }
+                else if (combined.Contains("leaves") || combined.Contains("leaf") || combined.Contains("foliage"))
+                {
+                    color = new Color(0.24f, 0.58f, 0.22f); // lush green tree foliage
+                }
+                else if (combined.Contains("branche") || combined.Contains("trunk") || combined.Contains("bark") || combined.Contains("wood"))
+                {
+                    color = new Color(0.36f, 0.24f, 0.16f); // natural tree bark brown
+                }
+                else if (combined.Contains("dress") || combined.Contains("shirt") || combined.Contains("cloth"))
+                {
+                    if (combined.Contains("shirt")) tex = TexMaleShirt ?? TexFemaleDress;
+                    else tex = TexFemaleDress ?? TexMaleShirt;
+                    color = tex != null ? Color.white : new Color(0.85f, 0.32f, 0.28f);
+                }
+                else if (combined.Contains("skin"))
+                {
+                    tex = TexFemaleSkin ?? TexMaleSkin;
+                    color = tex != null ? Color.white : new Color(0.88f, 0.72f, 0.60f);
+                }
+                else if (combined.Contains("hair"))
+                {
+                    tex = TexFemaleHair;
+                    color = tex != null ? Color.white : new Color(0.22f, 0.16f, 0.12f);
+                }
+                else if (combined.Contains("eye"))
+                {
+                    tex = TexFemaleEyes ?? TexMaleEyes;
+                    color = tex != null ? Color.white : new Color(0.15f, 0.15f, 0.18f);
+                }
+                else
+                {
+                    color = PaletteFor(combined, Color.gray);
+                }
+            }
 
             var mat = Make(color, null, tex);
-            mat.name = source.name + " (URP)";
-            Imported[id] = mat;
+            mat.name = (source != null ? source.name : objectName) + " (URP)";
+            ImportedByTag[cacheKey] = mat;
             return mat;
         }
     }

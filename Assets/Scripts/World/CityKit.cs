@@ -18,15 +18,21 @@ namespace OutOfWay
         static GameObject _buildings;
         static GameObject _street;
         static GameObject _lamp;
+        static GameObject _tree;
+        static GameObject _female;
+        static GameObject _male;
         static float _scale = 1f;
         static bool _tried;
 
-        public static void Bind(GameObject block, GameObject buildings, GameObject street, GameObject lamp = null)
+        public static void Bind(GameObject block, GameObject buildings, GameObject street, GameObject lamp = null, GameObject tree = null, GameObject female = null, GameObject male = null)
         {
             _block = block;
             _buildings = buildings;
             _street = street;
             _lamp = lamp;
+            _tree = tree;
+            _female = female;
+            _male = male;
             _tried = true;
             Ready = _block != null || _street != null;
             if (!Ready)
@@ -36,12 +42,28 @@ namespace OutOfWay
             }
 
             MeasureScale(_block != null ? _block : _street);
+
+#if UNITY_EDITOR
+            if (_tree == null)
+                _tree = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/SM_Tree_01.fbx");
+            if (_female == null)
+                _female = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/SM_HumanFemale/SM_HumanFemale.fbx");
+            if (_male == null)
+                _male = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/SM_HumanMale/SM_HumanMale.fbx");
+#endif
+
+            if (_tree == null)
+                _tree = Resources.Load<GameObject>("Models/SM_Tree_01");
+            if (_female == null)
+                _female = Resources.Load<GameObject>("Models/SM_HumanFemale");
+            if (_male == null)
+                _male = Resources.Load<GameObject>("Models/SM_HumanMale");
         }
 
         public static void Load()
         {
             if (_tried) return;
-            Bind(null, null, null, null);
+            Bind(null, null, null, null, null, null, null);
         }
 
         public static void Place(Transform tile)
@@ -66,6 +88,97 @@ namespace OutOfWay
                 var lamp = Spawn(_lamp, tile, Vector3.one);
                 AlignRoad(lamp, tile);
             }
+
+            // Place street trees along sidewalks
+            if (_tree != null)
+            {
+                PlantTrees(tile);
+            }
+
+            // Place pedestrians along sidewalks
+            if (_female != null || _male != null)
+            {
+                PlacePedestrians(tile);
+            }
+        }
+
+        static void PlantTrees(Transform tile)
+        {
+            if (_tree == null) return;
+            float len = TileLength;
+
+            // Staggered placement along left and right sidewalks
+            PlantTree(tile, new Vector3(-5.4f, 0f, len * 0.22f), 45f);
+            PlantTree(tile, new Vector3(5.4f, 0f, len * 0.50f), 135f);
+            PlantTree(tile, new Vector3(-5.4f, 0f, len * 0.76f), 220f);
+        }
+
+        static void PlantTree(Transform tile, Vector3 offsetOnTile, float yaw)
+        {
+            var tree = Object.Instantiate(_tree, tile);
+            Strip(tree);
+
+            tree.transform.localPosition = Vector3.zero;
+            tree.transform.localRotation = Quaternion.identity;
+            tree.transform.localScale = Vector3.one;
+
+            var b = Combined(tree);
+            float currentH = Mathf.Max(0.1f, b.size.y);
+            float targetHeight = 5.8f;
+            float scale = targetHeight / currentH;
+            tree.transform.localScale = Vector3.one * scale;
+
+            b = Combined(tree);
+            tree.transform.position = new Vector3(
+                offsetOnTile.x - b.center.x,
+                -b.min.y,
+                tile.position.z + offsetOnTile.z - b.center.z
+            );
+            tree.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+
+            Look.UseImported(tree);
+        }
+
+        static void PlacePedestrians(Transform tile)
+        {
+            float len = TileLength;
+
+            if (_female != null)
+            {
+                PlacePedestrian(tile, _female, new Vector3(-5.2f, 0f, len * 0.36f), 90f);
+            }
+
+            if (_male != null)
+            {
+                PlacePedestrian(tile, _male, new Vector3(5.2f, 0f, len * 0.65f), -90f);
+            }
+        }
+
+        static void PlacePedestrian(Transform tile, GameObject prefab, Vector3 offsetOnTile, float yaw)
+        {
+            if (prefab == null) return;
+            var ped = Object.Instantiate(prefab, tile);
+            Strip(ped);
+
+            ped.transform.localPosition = Vector3.zero;
+            ped.transform.localRotation = Quaternion.identity;
+            ped.transform.localScale = Vector3.one;
+
+            var b = Combined(ped);
+            float currentH = Mathf.Max(0.1f, b.size.y);
+            float targetHeight = 1.75f;
+            float scale = targetHeight / currentH;
+            ped.transform.localScale = Vector3.one * scale;
+
+            b = Combined(ped);
+            ped.transform.position = new Vector3(
+                offsetOnTile.x - b.center.x,
+                -b.min.y,
+                tile.position.z + offsetOnTile.z - b.center.z
+            );
+            ped.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+
+            Look.UseImported(ped);
         }
 
         static GameObject Spawn(GameObject prefab, Transform tile, Vector3 sign)

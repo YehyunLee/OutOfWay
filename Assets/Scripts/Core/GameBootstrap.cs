@@ -16,6 +16,11 @@ namespace OutOfWay
         public GameObject Bus;
         public GameObject StreetLamp;
 
+        [Header("Environment Props & Characters")]
+        public GameObject Tree;
+        public GameObject HumanFemale;
+        public GameObject HumanMale;
+
         [Header("Music")]
         public float Bpm = 130f;
         public bool MetronomeClicks;
@@ -83,7 +88,24 @@ namespace OutOfWay
 
             Look.Init();
             StyleWorld();
-            CityKit.Bind(StreetAndBuildings, Buildings, Street, StreetLamp);
+
+#if UNITY_EDITOR
+            if (Tree == null)
+                Tree = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/SM_Tree_01.fbx");
+            if (HumanFemale == null)
+                HumanFemale = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/SM_HumanFemale/SM_HumanFemale.fbx");
+            if (HumanMale == null)
+                HumanMale = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/SM_HumanMale/SM_HumanMale.fbx");
+#endif
+
+            if (Tree == null)
+                Tree = Resources.Load<GameObject>("Models/SM_Tree_01");
+            if (HumanFemale == null)
+                HumanFemale = Resources.Load<GameObject>("Models/SM_HumanFemale");
+            if (HumanMale == null)
+                HumanMale = Resources.Load<GameObject>("Models/SM_HumanMale");
+
+            CityKit.Bind(StreetAndBuildings, Buildings, Street, StreetLamp, Tree, HumanFemale, HumanMale);
 
             var preview = transform.Find(PreviewName);
             if (preview != null) preview.gameObject.SetActive(false);
@@ -144,7 +166,7 @@ namespace OutOfWay
             rhythm.Bind(music, Phrases != null ? Phrases : PhraseLibrary.CreateDefault());
 
             var spawner = gameObject.AddComponent<ObstacleSpawner>();
-            spawner.Bind(bus, rhythm);
+            spawner.Bind(bus, rhythm, music);
 
             var ui = GameUI.Create(transform);
 
@@ -168,7 +190,24 @@ namespace OutOfWay
             if (transform.Find(PreviewName) != null) return;
 
             Look.Init();
-            CityKit.Bind(StreetAndBuildings, Buildings, Street, StreetLamp);
+
+#if UNITY_EDITOR
+            if (Tree == null)
+                Tree = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/SM_Tree_01.fbx");
+            if (HumanFemale == null)
+                HumanFemale = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/SM_HumanFemale/SM_HumanFemale.fbx");
+            if (HumanMale == null)
+                HumanMale = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/SM_HumanMale/SM_HumanMale.fbx");
+#endif
+
+            if (Tree == null)
+                Tree = Resources.Load<GameObject>("Models/SM_Tree_01");
+            if (HumanFemale == null)
+                HumanFemale = Resources.Load<GameObject>("Models/SM_HumanFemale");
+            if (HumanMale == null)
+                HumanMale = Resources.Load<GameObject>("Models/SM_HumanMale");
+
+            CityKit.Bind(StreetAndBuildings, Buildings, Street, StreetLamp, Tree, HumanFemale, HumanMale);
             if (!CityKit.Ready) return;
 
             var holder = new GameObject(PreviewName).transform;

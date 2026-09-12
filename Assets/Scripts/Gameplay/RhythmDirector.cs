@@ -47,6 +47,7 @@ namespace OutOfWay
         bool _clipDriven;
         float _firstHonkAt;
         float _worstError;
+        float _phraseStartSongTime;
 
         public void Bind(MusicConductor music, PhraseLibrary library)
         {
@@ -78,8 +79,12 @@ namespace OutOfWay
             _firstHonkAt = -1f;
             _worstError = 0f;
             _clock = 0f;
+            _phraseStartSongTime = (_music != null) ? _music.SongTime : 0f;
             _clipDriven = Pattern.Clip != null;
             if (_clipDriven) _music.PlayPhrase(Pattern.Clip);
+
+            // Immediately trigger word 0 ("Get") right on the start beat
+            TickCall();
         }
 
         public void ResetState()
@@ -88,6 +93,7 @@ namespace OutOfWay
             CueIndex = -1;
             HonksAccepted = 0;
             _firstHonkAt = -1f;
+            _phraseStartSongTime = 0f;
             if (_music != null) _music.StopChant();
         }
 
@@ -117,8 +123,18 @@ namespace OutOfWay
         {
             if (!Busy) return;
 
-            if (_clipDriven && _music.PhrasePlaying) _clock = _music.PhraseTime;
-            else _clock += Time.deltaTime * _music.TempoScale;
+            if (_clipDriven && _music != null && _music.PhrasePlaying)
+            {
+                _clock = _music.PhraseTime;
+            }
+            else if (_music != null && _music.Music != null && _music.Music.isPlaying)
+            {
+                _clock = (_music.SongTime - _phraseStartSongTime) * _music.TempoScale;
+            }
+            else
+            {
+                _clock += Time.deltaTime * (_music != null ? _music.TempoScale : 1f);
+            }
 
             if (Phase == RhythmPhase.Call) TickCall();
             else TickResponse();

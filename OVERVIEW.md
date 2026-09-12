@@ -31,14 +31,24 @@ OutOfWay/
 ├── Assets/
 │   ├── Scenes/
 │   │   └── SampleScene.unity             Main gameplay scene with OutOfWay bootstrap object
-│   ├── Art/                              Designer 3D models (FBX format, tracked directly in Git)
+│   ├── Art/                              Designer 3D models and textures (tracked directly in Git)
 │   │   ├── FullScene.fbx                 Master city block (road, dual sidewalk curbs, lamp, buildings)
 │   │   ├── StreetAndBuildings.fbx        Combined road + buildings block (used for infinite recycling)
 │   │   ├── StreetAndSides.fbx            Asphalt road surface + concrete sidewalks and curbs
 │   │   ├── Street.fbx                    Isolated roadway mesh
 │   │   ├── Buildings.fbx                 Urban building facades (sides 1, 2, 3)
 │   │   ├── StreetLamp.fbx                Metal street lamp with curved neck and lantern
-│   │   └── SM_Bus.fbx                    Modular player bus model (body, front, 4 wheels, wheel wells)
+│   │   ├── SM_Bus.fbx                    Modular player bus model (body, front, 4 wheels, wheel wells)
+│   │   ├── SM_Tree_01.fbx                Blender street tree (branches + leaves)
+│   │   ├── Characters/                   Pedestrian character models and textures
+│   │   │   ├── SM_HumanFemale/           Female pedestrian model + Dress/Hair/Skin/Eyes textures
+│   │   │   └── SM_HumanMale/             Male pedestrian model + Shirt/Skin/Eyes textures
+│   │   └── Textures/                     PBR texture sets (BaseColor, Normal, Roughness, Metalness)
+│   │       ├── Street/                   Asphalt road surface textures
+│   │       ├── Sides/                    Sidewalk and curb concrete textures
+│   │       ├── Buildings_side_2/         Building facade set 2 textures
+│   │       ├── Buildings_side_3/         Building facade set 3 textures
+│   │       └── Lamp/                     Street lamp metal and light textures
 │   ├── Scripts/
 │   │   ├── Core/
 │   │   │   ├── GameBootstrap.cs          Automated game entry point, asset binder, and scene assembler
@@ -54,9 +64,9 @@ OutOfWay/
 │   │   │   ├── ObstacleController.cs     Obstacle swerve AI and siren animation
 │   │   │   └── RhythmDirector.cs         Call-and-response state machine and timing evaluator
 │   │   ├── World/
-│   │   │   ├── CityKit.cs                Designer FBX inspector, auto-scaling, and road aligner
+│   │   │   ├── CityKit.cs                Designer FBX inspector, auto-scaling, tree & pedestrian spawner
 │   │   │   ├── EndlessCity.cs            Infinite chunk pooling and recycling ahead of the bus
-│   │   │   ├── Look.cs                   URP material converter, color palette mapper, gray mesh fallback
+│   │   │   ├── Look.cs                   URP material converter, texture binder, color palette mapper
 │   │   │   └── VehicleFactory.cs         Bus and obstacle vehicle constructor
 │   │   ├── Audio/
 │   │   │   └── ProceduralAudio.cs        Synthesized horns, crash noise, and speed-pitched engine audio
@@ -64,6 +74,8 @@ OutOfWay/
 │   │       └── GameUI.cs                 Typography, tilted HUD stats, word animator, metronome toggle
 │   ├── Resources/
 │   │   ├── Fonts/                        Custom fonts (BrownieStencil, ArchivoBlack, Anton, Bangers, Bungee)
+│   │   ├── Models/                       Runtime-loadable FBX prefabs (SM_Tree_01, SM_HumanFemale, SM_HumanMale)
+│   │   ├── Textures/                     Runtime BaseColor textures (Street, Sides, Buildings, Lamp, Characters)
 │   │   └── Audio/                        Looping tracks, vocal word cues, and metronome files
 │   │       ├── BGM_130.mp3 / Metro_130   130 BPM base background music & metronome (12-beat & 4-beat)
 │   │       ├── BGM_140.mp3 / Metro_140   140 BPM Tier 2 background music & metronome
@@ -134,6 +146,13 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 
 ### 3.3 Multi-Tempo Audio & Word SFX Engine (`MusicConductor.cs`, `ProceduralAudio.cs`)
 - **Location:** `Assets/Scripts/Core/MusicConductor.cs`, `Assets/Scripts/Audio/ProceduralAudio.cs`
+- **Start Beat & Measure Synchronization:**
+  - Background music and metronomes are quantized to 4/4 time with downbeats (Start Beats) at regular measure intervals:
+    $$\text{BarInterval} = 4 \times \text{BeatInterval} = 4 \times \left(\frac{60}{\text{Bpm}}\right)$$
+  - Audio files share an initial downbeat onset offset: `StartBeatOffset = 0.022s` (~22ms).
+  - `MusicConductor` maintains a continuous, drift-free `SongTime` that tracks cumulative playback without resetting across audio loops.
+  - Detects measure boundaries when `Mathf.FloorToInt((SongTime - StartBeatOffset) / BarInterval)` increments, raising `StartBeatTriggered(bar)` and setting `IsStartBeatThisFrame = true`.
+  - Exposes `TimeUntilNextStartBeat` so gameplay systems can schedule events right on the musical grid.
 - **Vocal Word Sound Effects:**
   - Auto-loads vocal word clips from `Assets/Resources/Audio/`:
     - `Word_Get.mp3` (`get.mp3`) &rarr; Word index 0 ("GET")
@@ -143,6 +162,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
     - `Word_Way.mp3` (`way.mp3`) &rarr; Word index 4 ("WAY")
   - Triggered in real time via `PlayWord(index)` or `PlayWord(name)` on the dedicated `PhraseSource` audio channel.
   - Automatically pitch-scaled by `TempoScale` so chants match the faster 140 and 150 BPM tempos seamlessly.
+  - The first word sound ("GET") lands **simultaneously with the Start Beat downbeat** of the background music and the accent click of the metronome!
   - If a crash occurs mid-chant, `StopChant()` cuts vocal playback immediately.
 - **BGM & Metronome Loops:**
   - Background music tracks are exactly **3 bars (12 beats)** of seamless looping audio.
@@ -180,6 +200,10 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
   - The player's first honk defines `_firstHonkAt = _clock`.
   - Subsequent honks must match the relative offsets: `DueAt(index) = _firstHonkAt + (WordTimes[index] - WordTimes[0])`.
   - This allows the player to start their response naturally without being penalized for small phase shifts, as long as the internal rhythm is maintained!
+- **Audio-Clock Synchronization:**
+  - Phrase clock `_clock` is computed directly from `(_music.SongTime - _phraseStartSongTime) * _music.TempoScale`.
+  - This guarantees that each word ("GET", "OUT", "OF", "THE", "WAY") is sample-accurately pinned to the audio playback clock rather than accumulating frame-time drift.
+  - When `BeginPhrase()` is called, `TickCall()` runs immediately on the Start Beat frame, ensuring Word 0 ("GET") triggers on the exact frame the measure begins.
 - **Error Evaluation & Tolerances:**
   - `Tolerance` (default ~0.28s scaled by `ToleranceScale` and tightened slightly at high scores): Window around `DueAt(i)`.
   - `PerfectTolerance` (default ~0.13s): Triggers *"PERFECT — THEY MOVED"* bonus.
@@ -205,6 +229,14 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 
 ### 3.6 Spawner & Obstacles (`ObstacleSpawner.cs`, `ObstacleController.cs`)
 - **Location:** `Assets/Scripts/Gameplay/ObstacleSpawner.cs`, `Assets/Scripts/Gameplay/ObstacleController.cs`
+- **Start Beat Quantized Spawning:**
+  - When the inter-obstacle cooldown has elapsed (`Time.time >= _readyAt`), the spawner arms itself (`_pendingSpawn = true`).
+  - Instead of spawning at an arbitrary millisecond, it subscribes to `MusicConductor.StartBeatTriggered` (and monitors `IsStartBeatThisFrame`).
+  - The moment the background music and metronome hit the **downbeat of a new measure (Beat 1)**:
+    1. The obstacle is instantiated.
+    2. `_rhythm.BeginPhrase()` starts on the exact same frame.
+    3. The first vocal sound ("GET") fires synchronously with the BGM kick and metronome accent.
+  - A fallback safety timer (2.5s) guarantees obstacles still spawn reliably if audio is ever disabled or unavailable.
 - **Dynamic Look-Ahead Distance:**
   - Spawns obstacles ahead based on current vehicle velocity and pattern duration:
     $$\text{distance} = \max\left(38\text{m},\, \text{BusSpeed} \times \frac{\text{PatternDuration}}{\text{TempoScale}} + 10\text{m}\right)$$
@@ -215,27 +247,30 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
   - **Ambulance:** Features alternating red/blue roof emergency beacon lights.
 - **Obstacle Resolution (`Dodge`):** On rhythm success, `ObstacleController.Dodge()` animates a smooth rotation and steering swerve off the roadway onto the sidewalk shoulder.
 
-### 3.7 3D World Generation & Normalization (`EndlessCity.cs`, `CityKit.cs`, `Look.cs`, `VehicleFactory.cs`)
+### 3.7 3D World Generation, Texturing & Environment Props (`EndlessCity.cs`, `CityKit.cs`, `Look.cs`, `VehicleFactory.cs`)
 - **Location:** `Assets/Scripts/World/`
-- **`CityKit.cs` (FBX Auto-Scaling & Normalization):**
+- **`CityKit.cs` (FBX Auto-Scaling, Trees & Pedestrians):**
   - Searches imported FBX models for the asphalt road mesh (`Street`).
   - Measures the road's X-axis bounds and computes a uniform scale factor so the asphalt is always exactly **8.2 meters wide**.
   - Aligns the road surface flush with $Y = 0$.
   - Measures the block's Z-length to allow seamless longitudinal tiling.
+  - **Street Trees (`PlantTrees`):** Staggers `SM_Tree_01` along the left ($X = -5.4$m) and right ($X = +5.4$m) sidewalks. Strips non-geometry nodes (cameras/lights), normalizes height to ~5.8m, and aligns base flush to sidewalk.
+  - **Pedestrians (`PlacePedestrians`):** Places `SM_HumanFemale` and `SM_HumanMale` models along the sidewalks facing the street. Normalizes heights to ~1.75m and grounds flush to sidewalk surface.
 - **`EndlessCity.cs` (Infinite Recycling):**
   - Maintains a continuous chain of designer city blocks ahead of the bus along +Z.
   - Recycles blocks that fall $40$m behind the camera to the front of the queue, creating an endless street with zero garbage collection allocations.
-- **`Look.cs` (Material Conversion & Palette Mapping):**
+- **`Look.cs` (Material Conversion, Texture Pipeline & Palette Mapping):**
   - Replaces default FBX materials with URP Simple Lit or Unlit shaders.
-  - Maps Maya material slots to game palette colors:
-    - `lambert5` &rarr; Dark Charcoal Asphalt (`#3D4045`)
-    - `lambert6` &rarr; Concrete Curb / Sidewalk (`#D1CFC7`)
-    - `lambert3` &rarr; Terracotta Brick Facade (`#DC7A59`)
-    - `lambert4` &rarr; Teal Architectural Accents (`#5994A6`)
-    - `lambert7` &rarr; Dark Metal Streetlamp (`#2E2E33`)
-    - `M_Bus_01` &rarr; Mustard Yellow Bus Body (`#F5C242`)
-    - `M_Wheel_01` &rarr; Rubber Tire Dark (`#1F1F21`)
-    - `M_WheelClinder_01` &rarr; Wheel Hub Well (`#2E2E33`)
+  - **BaseColor Texture Mapping:**
+    - `Street` / `lambert5` &rarr; `Street_BaseColor.png` (asphalt road markings and detailed tarmac)
+    - `Sides` / `lambert6` &rarr; `Sides_BaseColor.png` (concrete pavement and curb details)
+    - `Buildings_side_2` / `lambert3` &rarr; `Buildings_side_2_BaseColor.png` (brickwork, window frames, balconies)
+    - `Buildings_side_3` / `lambert4` &rarr; `Buildings_side_3_BaseColor.png` (facade trims, storefronts)
+    - `Street_lamp` / `lambert7` &rarr; `Lamp_BaseColor.png` (dark metallic pole and lantern glass)
+    - Tree `leaves` &rarr; Organic vibrant green foliage (`#3D9438`)
+    - Tree `branches` &rarr; Natural tree bark brown (`#5C3D29`)
+    - Character materials &rarr; `Female_Dress.png`, `Female_Skin.png`, `Male_Shirt.png`, `Male_Skin.png`, etc.
+  - **Material Caching:** Composite keys (`{matName}___{objName}`) prevent cross-contamination between meshes sharing generic Maya material names.
   - **Gray Mesh Fallback:** If an FBX renderer has no materials or default untextured gray, `PaletteFor` inspects the GameObject hierarchy name (e.g. `street`, `road`, `walk`, `curb`, `building`, `lamp`) to guarantee no untextured gray meshes ever appear in the scene.
 - **`VehicleFactory.cs`:**
   - Instantiates `SM_Bus.fbx`, scales it to 7m length, sets up trigger collider bounds, and attaches `SpinWithSpeed` components to wheel nodes.
@@ -302,6 +337,8 @@ flowchart TD
 |---|---|---|
 | **Tempo upgrade scores (when 140 & 150 BPM trigger)** | `GameManager.cs` | `TempoMilestones = { 4, 8 }` |
 | **BGM audio tracks & metronome clicks** | `MusicConductor.cs` | `BGM130Resource`, `Metro130Resource`, `SetupBed()` |
+| **Downbeat / Start Beat audio alignment offset** | `MusicConductor.cs` | `StartBeatOffset = 0.022f` |
+| **Start Beat sync & obstacle spawn timing** | `ObstacleSpawner.cs` | `OnStartBeat()`, `_pendingSpawn`, `FirstDelay` |
 | **Metronome click volume or bed volume** | `MusicConductor.cs` | `BedVolume = 0.58f`, `MetronomeVolume = 0.65f` |
 | **Vocal word sound effects (`get`, `out`, `of`, `the`, `way`)** | `MusicConductor.cs` / `GameBootstrap.cs` | `WordClips`, `WordGet`, `WordOut`, `WordOf`, `WordThe`, `WordWay` |
 | **Rhythm difficulty tiers & score thresholds** | `PhraseLibrary.cs` | `Pick(score)` &rarr; Tier 1 (0-2), Tier 2 (3-5), Tier 3 (6-9), Tier 4 (10+) |
@@ -312,6 +349,8 @@ flowchart TD
 | **Obstacle spawn distance look-ahead** | `ObstacleSpawner.cs` | `Spawn()` &rarr; `travel` calculation |
 | **Obstacle vehicle mix (Car vs Bike vs Ambulance)** | `ObstacleSpawner.cs` | `RollKind()` probability thresholds |
 | **Roadway width and tile alignment** | `CityKit.cs` | `StandardRoadWidth = 8.2f`, `FindRoad()` |
+| **Street trees and pedestrian spawning** | `CityKit.cs` | `PlantTrees()`, `PlacePedestrians()`, tree height (~5.8m), pedestrian height (~1.75m) |
+| **Scene textures & BaseColor assignment** | `Look.cs` | `LoadTextures()`, `FromImported()`, `Assets/Resources/Textures/` |
 | **Building, road, and bus color palette** | `Look.cs` | `PaletteFor()`, `BusBody`, `BusDark`, `Road` |
 | **HUD tilt angles, text sizes, positions** | `GameUI.cs` | `Build()` &rarr; `TiltedStat(...)` calls |
 | **Camera distance, height, and punch intensity** | `GameBootstrap.cs` / `CameraRig.cs` | `cam.transform.position`, `Rig.Punch(...)` |

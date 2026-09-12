@@ -13,7 +13,7 @@ namespace OutOfWay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
-            if (FindFirstObjectByType<GameBootstrap>() != null) return;
+            if (FindAnyObjectByType<GameBootstrap>() != null) return;
             var root = new GameObject("OutOfWay");
             root.AddComponent<GameBootstrap>();
         }
@@ -25,7 +25,7 @@ namespace OutOfWay
 
             var city = Build.Empty("City", transform).gameObject.AddComponent<EndlessCity>();
             var bus = VehicleFactory.MakeBus(transform).GetComponent<BusController>();
-            city.Build(bus.transform);
+            city.Generate(bus.transform);
 
             var cam = Camera.main;
             if (cam == null)
@@ -81,7 +81,7 @@ namespace OutOfWay
             RenderSettings.ambientEquatorColor = new Color(0.55f, 0.52f, 0.45f);
             RenderSettings.ambientGroundColor = new Color(0.22f, 0.24f, 0.18f);
 
-            var sun = FindFirstObjectByType<Light>();
+            var sun = FindAnyObjectByType<Light>();
             if (sun != null)
             {
                 sun.color = new Color(1f, 0.93f, 0.78f);

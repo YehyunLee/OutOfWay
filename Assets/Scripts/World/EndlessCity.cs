@@ -12,7 +12,7 @@ namespace OutOfWay
         Transform[] _tiles;
         float _nextZ;
 
-        public void Build(Transform bus)
+        public void Generate(Transform bus)
         {
             _bus = bus;
             _tiles = new Transform[TileCount];

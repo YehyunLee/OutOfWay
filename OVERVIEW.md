@@ -76,13 +76,13 @@ OutOfWay/
 | `CityKit.cs` | **Designer FBX Placement Engine.** Inspects imported FBX hierarchies to isolate the road mesh (`Street`), automatically calculates scaling to achieve a standard road width (`8.2m`), aligns road surfaces flush to ground level, and tiles blocks seamlessly along +Z. |
 | `EndlessCity.cs` | **Infinite City Tile Recycler.** Pools and recycles designer city blocks (`FullScene.fbx` / `StreetAndBuildings.fbx`) ahead of the bus and removes distant tiles behind the camera. Uses 100% designer meshes with no procedural cube filler. |
 | `VehicleFactory.cs` | **Vehicle Constructor.** Spawns and configures the designer `SM_Bus.fbx` facing +Z, scales it to 7 units length, sets trigger collision bounds, attaches wheel spinners (`SpinWithSpeed`), and generates stylized obstacle traffic. |
-| `Look.cs` | **URP Material & Palette Bridge.** Automatically converts imported FBX materials to URP Unlit/Lit shaders. Maps Maya material slots (`lambert3`, `lambert4`, `lambert5`, `lambert6`, `lambert7`, `M_Bus_01`, `M_Wheel_01`, `M_WheelClinder_01`) to cohesive game colors while preserving textures. |
+| `Look.cs` | **URP Material & Palette Bridge.** Automatically converts imported FBX materials to URP Unlit/Lit shaders. Maps Maya material slots (`lambert3`, `lambert4`, `lambert5`, `lambert6`, `lambert7`, `M_Bus_01`, `M_Wheel_01`, `M_WheelClinder_01`) and object-name fallbacks to cohesive game colors while preventing untextured grey meshes. |
 
 ### UI & Audio
 
 | Script | Purpose |
 |---|---|
-| `GameUI.cs` | **Dynamic Typography & Accessibility UI.** Renders using `BrownieStencil` (fallback to `ArchivoBlack`). Displays animated word tokens that light up on the Call (`Dim` &rarr; `Paper`), flips to **"HONK IT BACK"** (`Mustard`), turns words **Green** on rhythmic hit (`ShowHonkAccepted`), stamps red **"FAIL!"** on mistake, announces tempo upgrades (**"SPEED UP! 140 BPM"**), punches streak counters, and provides Metronome Accessibility toggle buttons on Title and HUD (default OFF, toggle via click or `[M]`). |
+| `GameUI.cs` | **Dynamic Typography & Accessibility UI.** Renders using `BrownieStencil` (fallback to `ArchivoBlack`). Features hand-stamped tilted HUD stats (`_score`, `_streak`, `_speed`), recentered title bar, animated word tokens that light up on the Call (`Dim` &rarr; `Paper`), flips to **"HONK IT BACK"** (`Mustard`), turns words **Green** on rhythmic hit (`ShowHonkAccepted`), stamps red **"FAIL!"** on mistake, announces tempo upgrades (**"SPEED UP! 140 BPM"**), punches streak counters, and provides Metronome Accessibility toggle buttons on Title and HUD (default OFF, toggle via click or `[M]`). |
 | `ProceduralAudio.cs` | Synthesizes placeholder horns, crash noise, metronome clicks, and pitch-scaled engine rumbling. |
 
 ---

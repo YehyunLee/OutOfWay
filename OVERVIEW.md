@@ -1,21 +1,22 @@
 # Out of the Way — Project Architecture & Developer Guide
 
-**Out of the Way** is a Unity 6 URP (`6000.6.0f1`) rhythmic driving game built on a call-and-response gameplay loop. The player pilots a city bus along +Z through an infinite urban cityscape. Roadway obstacles block the lane, initiating a rhythmic chant (*"GET • OUT • OF • THE • WAY"*). The player must honk back the exact rhythm in time to clear the obstacle before collision. As the run progresses, tempo upgrades across multiple BPM tiers (130 &rarr; 140 &rarr; 150 BPM).
+**Out of the Way** is a Unity 6 URP (`6000.6.0f1`) rhythmic driving game built on a call-and-response gameplay loop. The player pilots a city bus along +Z through an infinite urban cityscape. Roadway obstacles block the lane, initiating a rhythmic vocal chant (*"GET • OUT • OF • THE • WAY"*). The player must honk back the exact rhythm in time to clear the obstacle before collision. As the run progresses, tempo upgrades across multiple BPM tiers (130 &rarr; 140 &rarr; 150 BPM) and rhythms progress from easy straight pulses to complex, randomized syncopations.
 
 ---
 
 ## Table of Contents
+
 1. [Repository & Project Structure](#1-repository--project-structure)
 2. [Runtime Architecture & Execution Flow](#2-runtime-architecture--execution-flow)
 3. [Core Subsystems (In-Depth Explanation)](#3-core-subsystems-in-depth-explanation)
-   - [3.1 Bootstrap & Lifecycle (`GameBootstrap.cs`)](#31-bootstrap--lifecycle-gamebootstrapcs)
+   - [3.1 Bootstrap & Scene Assembly (`GameBootstrap.cs`)](#31-bootstrap--scene-assembly-gamebootstrapcs)
    - [3.2 State Management & Progression (`GameManager.cs`)](#32-state-management--progression-gamemanagercs)
-   - [3.3 Multi-Tempo Audio & Metronome (`MusicConductor.cs`, `ProceduralAudio.cs`)](#33-multi-tempo-audio--metronome-musicconductorcs-proceduralaudiocs)
+   - [3.3 Multi-Tempo Audio & Word SFX Engine (`MusicConductor.cs`, `ProceduralAudio.cs`)](#33-multi-tempo-audio--word-sfx-engine-musicconductorcs-proceduralaudiocs)
    - [3.4 Call-and-Response Rhythm Engine (`RhythmDirector.cs`, `PhrasePattern.cs`, `PhraseLibrary.cs`)](#34-call-and-response-rhythm-engine-rhythmdirectorcs-phrasepatterncs-phraselibrarycs)
    - [3.5 Vehicle Physics & Camera (`BusController.cs`, `CameraRig.cs`)](#35-vehicle-physics--camera-buscontrollercs-camerarigcs)
    - [3.6 Spawner & Obstacles (`ObstacleSpawner.cs`, `ObstacleController.cs`)](#36-spawner--obstacles-obstaclespawnercs-obstaclecontrollercs)
-   - [3.7 3D World Generation & Recycling (`EndlessCity.cs`, `CityKit.cs`, `Look.cs`, `VehicleFactory.cs`)](#37-3d-world-generation--recycling-endlesscitycs-citykitcs-lookcs-vehiclefactorycs)
-   - [3.8 Typography, HUD & Accessibility UI (`GameUI.cs`)](#38-typography-hud--accessibility-ui-gameuics)
+   - [3.7 3D World Generation & Normalization (`EndlessCity.cs`, `CityKit.cs`, `Look.cs`, `VehicleFactory.cs`)](#37-3d-world-generation--normalization-endlesscitycs-citykitcs-lookcs-vehiclefactorycs)
+   - [3.8 Typography, Hand-Stamped HUD & Accessibility UI (`GameUI.cs`)](#38-typography-hand-stamped-hud--accessibility-ui-gameuics)
 4. [Dual-Loop Game Flow (State Diagram)](#4-dual-loop-game-flow-state-diagram)
 5. [Configuration & Tuning Guide ("Where to Look")](#5-configuration--tuning-guide-where-to-look)
 6. [Asset Pipeline & Team Git Policy](#6-asset-pipeline--team-git-policy)
@@ -40,12 +41,12 @@ OutOfWay/
 │   │   └── SM_Bus.fbx                    Modular player bus model (body, front, 4 wheels, wheel wells)
 │   ├── Scripts/
 │   │   ├── Core/
-│   │   │   ├── GameBootstrap.cs          Automated game entry point and scene assembler
+│   │   │   ├── GameBootstrap.cs          Automated game entry point, asset binder, and scene assembler
 │   │   │   ├── GameManager.cs            Session flow, scoring, crash handling, tempo progression
-│   │   │   └── MusicConductor.cs         Beat tracking, loop phase synchronization, metronome engine
+│   │   │   └── MusicConductor.cs         Beat tracking, loop phase synchronization, vocal SFX dispatcher
 │   │   ├── Rhythm/
 │   │   │   ├── PhrasePattern.cs          Rhythm pattern definition ScriptableObject
-│   │   │   └── PhraseLibrary.cs          Library of calibrated phrase patterns (Even, Rush, Drag, etc.)
+│   │   │   └── PhraseLibrary.cs          Rhythm difficulty curves, curated presets, procedural beat generator
 │   │   ├── Gameplay/
 │   │   │   ├── BusController.cs          Bus acceleration, steering jolt, crash spinout, wheel spin
 │   │   │   ├── CameraRig.cs              Smooth tracking camera with honk/crash punch impulses
@@ -63,10 +64,15 @@ OutOfWay/
 │   │       └── GameUI.cs                 Typography, tilted HUD stats, word animator, metronome toggle
 │   ├── Resources/
 │   │   ├── Fonts/                        Custom fonts (BrownieStencil, ArchivoBlack, Anton, Bangers, Bungee)
-│   │   └── Audio/                        Looping tracks and accessibility metronome files
+│   │   └── Audio/                        Looping tracks, vocal word cues, and metronome files
 │   │       ├── BGM_130.mp3 / Metro_130   130 BPM base background music & metronome (12-beat & 4-beat)
 │   │       ├── BGM_140.mp3 / Metro_140   140 BPM Tier 2 background music & metronome
 │   │       ├── BGM_150.mp3 / Metro_150   150 BPM Tier 3 background music & metronome
+│   │       ├── Word_Get.mp3 (get.mp3)    Vocal sound effect for "GET"
+│   │       ├── Word_Out.mp3 (out.mp3)    Vocal sound effect for "OUT"
+│   │       ├── Word_Of.mp3 (of.mp3)      Vocal sound effect for "OF"
+│   │       ├── Word_The.mp3 (the.mp3)    Vocal sound effect for "THE"
+│   │       ├── Word_Way.mp3 (way.mp3)    Vocal sound effect for "WAY"
 │   │       └── BackgroundBed.mp3         Legacy 100 BPM bed fallback
 │   ├── Licenses/                         Font attribution and commercial licenses
 │   ├── Settings/                         Universal Render Pipeline (URP) assets and volume profiles
@@ -92,10 +98,10 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
     ├── 5. EndlessCity.Generate(...) ────────── Spawns initial looping block sequence along +Z
     ├── 6. CameraRig.Target = bus ───────────── Binds main camera to chase bus with impulse punch
     ├── 7. ProceduralAudio.Create(...) ──────── Instantiates audio synth for horn, crash, engine
-    ├── 8. MusicConductor.SetupBed() ────────── Loads BGM/Metronome tiers, begins 130 BPM audio loop
+    ├── 8. MusicConductor.SetupBed() ────────── Loads BGM/Metronome tiers & word SFX, begins 130 BPM audio loop
     ├── 9. RhythmDirector.Bind(...) ─────────── Initializes call-and-response state machine
     ├── 10. ObstacleSpawner.Bind(...) ───────── Prepares obstacle spawner with speed-adjusted lookahead
-    ├── 11. GameUI.Create(...) ──────────────── Builds canvas, loads BrownieStencil font, constructs HUD
+    ├── 11. GameUI.Create(...) ──────────────── Builds canvas, loads BrownieStencil font, constructs tilted HUD
     ├── 12. GameManager.Wire() ─────────────── Connects events between Rhythm, UI, Spawner, and Audio
     └── 13. State = Title ───────────────────── Bus idles; wait for Space / Click / Honk to drive
 ```
@@ -104,12 +110,12 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 
 ## 3. Core Subsystems (In-Depth Explanation)
 
-### 3.1 Bootstrap & Lifecycle (`GameBootstrap.cs`)
+### 3.1 Bootstrap & Scene Assembly (`GameBootstrap.cs`)
 - **Location:** `Assets/Scripts/Core/GameBootstrap.cs`
 - **Execution Order:** `[DefaultExecutionOrder(-100)]` ensures all core services exist before any other `MonoBehaviour.Update()` runs.
 - **Auto-Boot:** Decorated with `[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]`. If the scene does not already have an `OutOfWay` GameObject, it automatically instantiates one.
 - **In-Editor Scene Preview:** Uses `[ExecuteAlways]` and `UnityEditor.EditorApplication.delayCall` to spawn a live visual preview (`DesignerStreet`) in the Scene View when working in the editor, automatically cleaned up when entering Play Mode.
-- **Inspector Bindings:** Exposes fields for designer FBX prefabs (`StreetAndBuildings`, `Buildings`, `Street`, `Bus`, `StreetLamp`), initial BPM, tolerance scale, and restart delays.
+- **Inspector Bindings:** Exposes fields for designer FBX prefabs (`StreetAndBuildings`, `Buildings`, `Street`, `Bus`, `StreetLamp`), initial BPM, tolerance scale, restart delays, tempo track overrides, and individual word sound effect overrides (`WordGet`, `WordOut`, `WordOf`, `WordThe`, `WordWay`).
 
 ### 3.2 State Management & Progression (`GameManager.cs`)
 - **Location:** `Assets/Scripts/Core/GameManager.cs`
@@ -126,10 +132,20 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
   - **Score 8+:** Tier 2 &rarr; **150 BPM** (`BGM_150.mp3`), HUD banner displays *"SPEED UP! 150 BPM"*.
   - On crash/restart, `MusicConductor.ResetToStartingTier()` resets the tempo back to **130 BPM**.
 
-### 3.3 Multi-Tempo Audio & Metronome (`MusicConductor.cs`, `ProceduralAudio.cs`)
+### 3.3 Multi-Tempo Audio & Word SFX Engine (`MusicConductor.cs`, `ProceduralAudio.cs`)
 - **Location:** `Assets/Scripts/Core/MusicConductor.cs`, `Assets/Scripts/Audio/ProceduralAudio.cs`
+- **Vocal Word Sound Effects:**
+  - Auto-loads vocal word clips from `Assets/Resources/Audio/`:
+    - `Word_Get.mp3` (`get.mp3`) &rarr; Word index 0 ("GET")
+    - `Word_Out.mp3` (`out.mp3`) &rarr; Word index 1 ("OUT")
+    - `Word_Of.mp3` (`of.mp3`) &rarr; Word index 2 ("OF")
+    - `Word_The.mp3` (`the.mp3`) &rarr; Word index 3 ("THE")
+    - `Word_Way.mp3` (`way.mp3`) &rarr; Word index 4 ("WAY")
+  - Triggered in real time via `PlayWord(index)` or `PlayWord(name)` on the dedicated `PhraseSource` audio channel.
+  - Automatically pitch-scaled by `TempoScale` so chants match the faster 140 and 150 BPM tempos seamlessly.
+  - If a crash occurs mid-chant, `StopChant()` cuts vocal playback immediately.
 - **BGM & Metronome Loops:**
-  - Background music tracks are exactly **3 bars (12 beats)** of seamless audio.
+  - Background music tracks are exactly **3 bars (12 beats)** of seamless looping audio.
   - Metronome tracks are exactly **1 bar (4 beats)** of clicks matching the exact tempo.
   - Duration per tier:
     - **130 BPM:** BGM = 5.538s, Metro = 1.846s ($60 / 130 = 0.4615$s per beat).
@@ -149,25 +165,34 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 - **Location:** `Assets/Scripts/Gameplay/RhythmDirector.cs`, `Assets/Scripts/Rhythm/`
 - **Rhythm Phases (`RhythmPhase`):**
   1. `Idle`: Waiting for obstacle encounter.
-  2. `Call`: Obstacle is approaching. Words illuminate in sequence (*"GET"* &rarr; *"OUT"* &rarr; *"OF"* &rarr; *"THE"* &rarr; *"WAY"*). Metronome or voice clip plays.
+  2. `Call`: Obstacle is approaching. Words illuminate in sequence (*"GET"* &rarr; *"OUT"* &rarr; *"OF"* &rarr; *"THE"* &rarr; *"WAY"*). Each beat triggers its corresponding vocal sound effect clip (`PlayWord(index)`).
   3. `Response`: Prompt switches to *"HONK IT BACK"*. Player input window opens.
   4. `Resolved`: Success (all words matched) or Failed (miss/timeout).
+- **Progressive Rhythm Difficulty & Procedural Random Beat Generation (`PhraseLibrary.cs`):**
+  - **Tier 1 (Easy / Warmup, Score 0–2):** 100% predictable straight beats (`Even` and `Hold`). Perfect for learning the timing.
+  - **Tier 2 (Intermediate, Score 3–5):** Introduces groove variations (`Even`, `Hold`, `Drag`, `Swing`).
+  - **Tier 3 (Hard, Score 6–9):** Introduces fast syncopations (`Rush`, `Stutter`, `Syncopate`) with 30% chance of random beats.
+  - **Tier 4 (Expert / Random Beats, Score 10+):** 70% to 85% chance of **procedurally generated random beats** (`GenerateRandomPattern`).
+    - Randomizes 4 interval gaps from musical multipliers ($0.5b, 0.75b, 1.0b, 1.25b, 1.5b, 1.75b$).
+    - Enforces human playability guards (no consecutive rapid sub-$0.6b$ gaps; phrase length bounded between $2.2b$ and $5.2b$).
+    - Procedurally labeled (`"Syncopate"`, `"Offbeat"`, `"Freestyle"`, `"Wildcard"`, `"Breakbeat"`, `"Random Beat"`, `"Funky"`, `"Quickstep"`).
 - **Relative Honk Timing:**
   - The player's first honk defines `_firstHonkAt = _clock`.
   - Subsequent honks must match the relative offsets: `DueAt(index) = _firstHonkAt + (WordTimes[index] - WordTimes[0])`.
   - This allows the player to start their response naturally without being penalized for small phase shifts, as long as the internal rhythm is maintained!
 - **Error Evaluation & Tolerances:**
-  - `Tolerance` (default ~0.28s scaled by `ToleranceScale`): Window around `DueAt(i)`.
+  - `Tolerance` (default ~0.28s scaled by `ToleranceScale` and tightened slightly at high scores): Window around `DueAt(i)`.
   - `PerfectTolerance` (default ~0.13s): Triggers *"PERFECT — THEY MOVED"* bonus.
   - Failures trigger specific causes: `"TOO EARLY"` (honking during Call), `"OFF BEAT"` (timing mismatch), `"TOO SLOW"` (timeout before first honk or between honks).
-- **Phrase Presets (`PhraseLibrary.cs`):**
+- **Curated Phrase Presets (`PhraseLibrary.cs`):**
   - Calibrated to base quarter beat $b = 60 / 130 \approx 0.4615$s:
     - **Even:** Straight quarter beats `[0, b, 2b, 3b, 4b]`
-    - **Rush:** Accelerating tempo `[0, 0.75b, 1.5b, 2.25b, 3b]`
+    - **Hold:** Dramatic pause on "The" `[0, 0.75b, 1.5b, 2.25b, 3.75b]`
     - **Drag:** Swung delay `[0, b, 2b, 2.75b, 3.75b]`
-    - **Stutter:** Double hits `[0, 0.5b, b, 2.25b, 3b]`
-    - **Hold:** Dramatic pause `[0, 0.75b, 1.5b, 2.25b, 3.75b]`
     - **Swing:** Syncopated groove `[0, 0.833b, 1.417b, 2.25b, 2.833b]`
+    - **Rush:** Accelerating tempo `[0, 0.75b, 1.5b, 2.25b, 3b]`
+    - **Stutter:** Double hits on words 0 & 1 `[0, 0.5b, b, 2.25b, 3b]`
+    - **Syncopate:** Staggered off-beat accents `[0, 0.75b, 1.25b, 2.5b, 3.25b]`
 
 ### 3.5 Vehicle Physics & Camera (`BusController.cs`, `CameraRig.cs`)
 - **Location:** `Assets/Scripts/Gameplay/BusController.cs`, `Assets/Scripts/Gameplay/CameraRig.cs`
@@ -190,7 +215,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
   - **Ambulance:** Features alternating red/blue roof emergency beacon lights.
 - **Obstacle Resolution (`Dodge`):** On rhythm success, `ObstacleController.Dodge()` animates a smooth rotation and steering swerve off the roadway onto the sidewalk shoulder.
 
-### 3.7 3D World Generation & Recycling (`EndlessCity.cs`, `CityKit.cs`, `Look.cs`, `VehicleFactory.cs`)
+### 3.7 3D World Generation & Normalization (`EndlessCity.cs`, `CityKit.cs`, `Look.cs`, `VehicleFactory.cs`)
 - **Location:** `Assets/Scripts/World/`
 - **`CityKit.cs` (FBX Auto-Scaling & Normalization):**
   - Searches imported FBX models for the asphalt road mesh (`Street`).
@@ -215,7 +240,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
 - **`VehicleFactory.cs`:**
   - Instantiates `SM_Bus.fbx`, scales it to 7m length, sets up trigger collider bounds, and attaches `SpinWithSpeed` components to wheel nodes.
 
-### 3.8 Typography, HUD & Accessibility UI (`GameUI.cs`)
+### 3.8 Typography, Hand-Stamped HUD & Accessibility UI (`GameUI.cs`)
 - **Location:** `Assets/Scripts/UI/GameUI.cs`
 - **Typography:** Uses custom display font `BrownieStencil` (with fallback chain: `ArchivoBlack` &rarr; `LegacyRuntime` &rarr; OS Sans-Serif).
 - **Hand-Stamped Tilted HUD Stats:**
@@ -257,7 +282,7 @@ flowchart TD
     end
 
     subgraph RhythmLoop [Call-and-Response Rhythm Loop]
-        activeBlocker -.-> callPhase[Call Phase: Chant Plays\nWords Light Up: GET • OUT • OF • THE • WAY]
+        activeBlocker -.-> callPhase[Call Phase: Chant Plays + Vocal Word SFX\nGET • OUT • OF • THE • WAY]
         callPhase --> respPhase[Response Phase: 'HONK IT BACK'\nPlayer Mirrors Rhythm on Space / Button]
         respPhase --> timingEval{Timing Window Check}
         timingEval -->|Within Tolerance| wordGreen[Word Turns Green]
@@ -278,8 +303,11 @@ flowchart TD
 | **Tempo upgrade scores (when 140 & 150 BPM trigger)** | `GameManager.cs` | `TempoMilestones = { 4, 8 }` |
 | **BGM audio tracks & metronome clicks** | `MusicConductor.cs` | `BGM130Resource`, `Metro130Resource`, `SetupBed()` |
 | **Metronome click volume or bed volume** | `MusicConductor.cs` | `BedVolume = 0.58f`, `MetronomeVolume = 0.65f` |
+| **Vocal word sound effects (`get`, `out`, `of`, `the`, `way`)** | `MusicConductor.cs` / `GameBootstrap.cs` | `WordClips`, `WordGet`, `WordOut`, `WordOf`, `WordThe`, `WordWay` |
+| **Rhythm difficulty tiers & score thresholds** | `PhraseLibrary.cs` | `Pick(score)` &rarr; Tier 1 (0-2), Tier 2 (3-5), Tier 3 (6-9), Tier 4 (10+) |
+| **Procedural random beat generation & musical gaps** | `PhraseLibrary.cs` | `GenerateRandomPattern()` &rarr; `gapOptions`, tolerance clamps |
 | **Hit window generosity / timing tolerance** | `GameBootstrap.cs` / Inspector | `ToleranceScale` (e.g. `1.5f` = 50% more forgiving) |
-| **Exact word timings for phrase rhythms** | `PhraseLibrary.cs` | `CreateDefault()` (`Even`, `Rush`, `Drag`, etc.) |
+| **Exact word timings for phrase rhythms** | `PhraseLibrary.cs` | `CreatePreset()` (`Even`, `Rush`, `Drag`, etc.) |
 | **Bus driving speed and acceleration** | `BusController.cs` | `StartSpeed = 9f`, `MaxSpeed = 28f`, `Acceleration = 0.28f` |
 | **Obstacle spawn distance look-ahead** | `ObstacleSpawner.cs` | `Spawn()` &rarr; `travel` calculation |
 | **Obstacle vehicle mix (Car vs Bike vs Ambulance)** | `ObstacleSpawner.cs` | `RollKind()` probability thresholds |

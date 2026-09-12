@@ -1,6 +1,6 @@
 # Out of the Way — project overview
 
-Unity 6 (URP) bus-driver rhythm game. Press Play on `Assets/Scenes/SampleScene`. The world, bus, UI, and music all spawn at runtime from `GameBootstrap` on the `OutOfWay` scene object.
+Unity 6 (URP) bus-driver rhythm game. Open `Assets/Scenes/SampleScene`. Designer street meshes live in `Assets/Art` and are assigned on the **OutOfWay** object so they show in the Scene view. Play still recycles those same FBX tiles as you drive.
 
 ---
 
@@ -9,16 +9,16 @@ Unity 6 (URP) bus-driver rhythm game. Press Play on `Assets/Scenes/SampleScene`.
 ```
 OutOfWay/
 ├── Assets/
-│   ├── Scenes/SampleScene.unity     Play this. Contains camera, light, volume, OutOfWay bootstrap.
+│   ├── Scenes/SampleScene.unity     The game scene (camera, light, volume, OutOfWay).
+│   ├── Art/                         Designer FBX: Street, Buildings, StreetAndBuildings
 │   ├── Scripts/
 │   │   ├── Core/                    Game start, state, music clock
 │   │   ├── Gameplay/                Bus, obstacles, honk rhythm
-│   │   ├── World/                   City, vehicles, designer FBX kit
+│   │   ├── World/                   City loop using the FBX kit
 │   │   ├── Audio/                   Placeholder SFX (horn, crash, engine)
 │   │   └── UI/                      Title, HUD, fail screen
 │   ├── Resources/
-│   │   ├── Audio/BackgroundBed.mp3  Looping bed (base tempo)
-│   │   └── Art/                     Designer Maya FBX (street + buildings)
+│   │   └── Audio/BackgroundBed.mp3  Looping bed (base tempo)
 │   ├── Settings/                    URP renderer / volume profiles
 │   └── TutorialInfo/                Unity template readme (ignore)
 ├── Packages/                        Unity packages (Input System, URP, …)
@@ -64,13 +64,13 @@ OutOfWay/
 | `ProceduralAudio.cs` | Placeholder horn, clicks, crash, engine rumble until real SFX land. |
 | `GameUI.cs` | Title, score/speed chips, beat pips, round HONK button, license-revoked card. |
 
-### Assets in Resources
+### Assets
 
 | File | Role |
 |---|---|
-| `Audio/BackgroundBed.mp3` | Placeholder loop. Base speed for the game until the music person delivers other tempos. |
-| `Art/Street.fbx` | Road + sidewalks. |
-| `Art/Buildings.fbx` | Building row (one sidewalk in Maya). |
+| `Resources/Audio/BackgroundBed.mp3` | Placeholder loop until other tempos land. |
+| `Art/Street.fbx` | Designer road + sidewalks. |
+| `Art/Buildings.fbx` | Designer building row (one sidewalk in Maya). |
 | `Art/StreetAndBuildings.fbx` | Combined street block used as the looping tile. |
 
 ---
@@ -124,8 +124,8 @@ Honk with no active phrase just plays the horn. Does not fail the run.
 
 **Art**
 
-- Street tiles: `Assets/Resources/Art/*.fbx`. `CityKit` scales the road to the bus and mirrors buildings.
-- New meshes: put them in `Resources/Art` and point `CityKit` at the new resource names.
+- Street tiles: `Assets/Art/*.fbx`, assigned on the `OutOfWay` object in SampleScene.
+- `CityKit` instances those meshes and mirrors buildings onto both sidewalks. It does not rebuild the street from cubes when the FBX slots are filled.
 
 **Feel / timing**
 

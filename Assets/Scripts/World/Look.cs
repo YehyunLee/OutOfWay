@@ -95,6 +95,11 @@ namespace OutOfWay
                       ?? Shader.Find("Universal Render Pipeline/Lit")
                       ?? Shader.Find("Unlit/Color")
                       ?? Shader.Find("Sprites/Default");
+            if (_shader == null)
+            {
+                Debug.LogError("Look: no URP/Unlit shader found. Check the URP package.");
+                return;
+            }
 
             Lit = Make(Color.white);
             BusMat = Make(BusBody);

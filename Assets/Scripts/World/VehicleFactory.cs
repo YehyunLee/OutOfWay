@@ -11,11 +11,100 @@ namespace OutOfWay
 
     public static class VehicleFactory
     {
-        public static Transform MakeBus(Transform parent)
+        public static Transform MakeBus(Transform parent, GameObject prefab = null)
         {
             var root = Build.Empty("Bus", parent);
-            root.position = new Vector3(0f, 0f, 0f);
+            root.position = Vector3.zero;
 
+            if (prefab != null)
+                AttachDesignerBus(root, prefab);
+            else
+                AttachPrimitiveBus(root);
+
+            var b = CombinedBounds(root.gameObject);
+            var hit = root.gameObject.AddComponent<BoxCollider>();
+            hit.center = root.InverseTransformPoint(b.center);
+            hit.size = Vector3.Max(b.size, new Vector3(1.5f, 1.5f, 3f));
+            hit.isTrigger = true;
+
+            var body = root.gameObject.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+
+            var bus = root.gameObject.AddComponent<BusController>();
+            bus.CollectWheels();
+            return root;
+        }
+
+        static void AttachDesignerBus(Transform root, GameObject prefab)
+        {
+            var visual = Object.Instantiate(prefab, root);
+            visual.name = "SM_Bus";
+            foreach (var cam in visual.GetComponentsInChildren<Camera>(true))
+            {
+                cam.enabled = false;
+                if (cam.gameObject == visual) Object.DestroyImmediate(cam);
+                else Object.DestroyImmediate(cam.gameObject);
+            }
+
+            foreach (var light in visual.GetComponentsInChildren<Light>(true))
+            {
+                if (light.gameObject == visual) Object.DestroyImmediate(light);
+                else Object.DestroyImmediate(light.gameObject);
+            }
+
+            foreach (var col in visual.GetComponentsInChildren<Collider>(true))
+                Object.DestroyImmediate(col);
+
+            foreach (var t in visual.GetComponentsInChildren<Transform>(true))
+            {
+                string n = t.name.ToLowerInvariant();
+                if (n.Contains("clider") || n.Contains("collider"))
+                    t.gameObject.SetActive(false);
+            }
+
+            // Maya bus faces +X. Game drives +Z.
+            visual.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localScale = Vector3.one;
+
+            var b = CombinedBounds(visual);
+            float length = Mathf.Max(0.01f, b.size.z);
+            float scale = 7.0f / length;
+            visual.transform.localScale = Vector3.one * scale;
+
+            b = CombinedBounds(visual);
+            visual.transform.position += new Vector3(-b.center.x, -b.min.y, -b.center.z);
+
+            PaintDesignerBus(visual);
+            foreach (var t in visual.GetComponentsInChildren<Transform>())
+            {
+                string n = t.name.ToLowerInvariant();
+                if (n.Contains("clider") || n.Contains("collider"))
+                {
+                    t.gameObject.SetActive(false);
+                    continue;
+                }
+
+                if (n.Contains("wheel"))
+                    t.gameObject.AddComponent<SpinWithSpeed>();
+            }
+        }
+
+        static void PaintDesignerBus(GameObject visual)
+        {
+            foreach (var r in visual.GetComponentsInChildren<Renderer>())
+            {
+                string n = r.gameObject.name.ToLowerInvariant();
+                if (n.Contains("wheel"))
+                    r.sharedMaterial = Look.DarkMat;
+                else
+                    r.sharedMaterial = Look.BusMat;
+            }
+        }
+
+        static void AttachPrimitiveBus(Transform root)
+        {
             Build.Box(root, "Body", new Vector3(0f, 1.35f, 0f), new Vector3(2.4f, 1.7f, 7.2f), Look.BusMat);
             Build.Box(root, "Stripe", new Vector3(0f, 1.15f, 0f), new Vector3(2.46f, 0.28f, 7.24f), Look.BusStripeMat);
             Build.Box(root, "Roof", new Vector3(0f, 2.28f, -0.1f), new Vector3(2.2f, 0.16f, 6.6f), Look.BusMat);
@@ -31,26 +120,21 @@ namespace OutOfWay
             Build.Box(root, "TailL", new Vector3(-0.85f, 0.85f, -3.68f), new Vector3(0.35f, 0.18f, 0.08f), Look.TaillightMat);
             Build.Box(root, "TailR", new Vector3(0.85f, 0.85f, -3.68f), new Vector3(0.35f, 0.18f, 0.08f), Look.TaillightMat);
             Build.Box(root, "Driver", new Vector3(-0.55f, 1.55f, 2.7f), new Vector3(0.4f, 0.55f, 0.28f), Look.DarkMat);
-
             Wheel(root, "WFL", new Vector3(-1.15f, 0.38f, 2.2f));
             Wheel(root, "WFR", new Vector3(1.15f, 0.38f, 2.2f));
             Wheel(root, "WML", new Vector3(-1.15f, 0.38f, -0.4f));
             Wheel(root, "WMR", new Vector3(1.15f, 0.38f, -0.4f));
             Wheel(root, "WRL", new Vector3(-1.15f, 0.38f, -2.4f));
             Wheel(root, "WRR", new Vector3(1.15f, 0.38f, -2.4f));
+        }
 
-            var hit = root.gameObject.AddComponent<BoxCollider>();
-            hit.center = new Vector3(0f, 1.1f, 0.4f);
-            hit.size = new Vector3(2.4f, 2.1f, 7.4f);
-            hit.isTrigger = true;
-
-            var body = root.gameObject.AddComponent<Rigidbody>();
-            body.isKinematic = true;
-            body.useGravity = false;
-
-            var bus = root.gameObject.AddComponent<BusController>();
-            bus.CollectWheels();
-            return root;
+        static Bounds CombinedBounds(GameObject go)
+        {
+            var rs = go.GetComponentsInChildren<Renderer>();
+            if (rs.Length == 0) return new Bounds(go.transform.position, Vector3.one);
+            var b = rs[0].bounds;
+            for (int i = 1; i < rs.Length; i++) b.Encapsulate(rs[i].bounds);
+            return b;
         }
 
         public static ObstacleController MakeObstacle(ObstacleKind kind, Transform parent, int seed)

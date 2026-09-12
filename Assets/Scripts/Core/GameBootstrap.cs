@@ -4,12 +4,25 @@ using UnityEngine.Rendering.Universal;
 namespace OutOfWay
 {
     [DefaultExecutionOrder(-100)]
+#if UNITY_EDITOR
+    [ExecuteAlways]
+#endif
     public class GameBootstrap : MonoBehaviour
     {
-        [Header("Music — drop the track here when it's ready")]
+        [Header("Designer assets — drag from Assets/Art")]
+        public GameObject StreetAndBuildings;
+        public GameObject Buildings;
+        public GameObject Street;
+        public GameObject Bus;
+
+        [Header("Music")]
         public float Bpm = 100f;
-        public bool MetronomeClicks = true;
+        public bool MetronomeClicks;
+        public AudioClip BackgroundBed;
         public AudioClip GetOutOfTheWayPhrase;
+
+        const string PreviewName = "DesignerStreet";
+        bool _playBooted;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -19,13 +32,39 @@ namespace OutOfWay
             root.AddComponent<GameBootstrap>();
         }
 
+        void OnEnable()
+        {
+            if (Application.isPlaying)
+            {
+                BootPlay();
+                return;
+            }
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.delayCall += ShowDesignerStreet;
+#endif
+        }
+
         void Awake()
         {
+            if (Application.isPlaying)
+                BootPlay();
+        }
+
+        void BootPlay()
+        {
+            if (!Application.isPlaying || _playBooted) return;
+            _playBooted = true;
+
             Look.Init();
             StyleWorld();
+            CityKit.Bind(StreetAndBuildings, Buildings, Street);
+
+            var preview = transform.Find(PreviewName);
+            if (preview != null) preview.gameObject.SetActive(false);
 
             var city = Build.Empty("City", transform).gameObject.AddComponent<EndlessCity>();
-            var bus = VehicleFactory.MakeBus(transform).GetComponent<BusController>();
+            var bus = VehicleFactory.MakeBus(transform, Bus).GetComponent<BusController>();
             city.Generate(bus.transform);
 
             var cam = Camera.main;
@@ -37,8 +76,9 @@ namespace OutOfWay
                 camGo.tag = "MainCamera";
             }
 
-            cam.transform.position = bus.transform.position + new Vector3(0f, 3.5f, -8.2f);
-            cam.fieldOfView = 62f;
+            cam.enabled = true;
+            cam.transform.position = bus.transform.position + new Vector3(0f, 4.4f, -10.5f);
+            cam.fieldOfView = 60f;
             cam.nearClipPlane = 0.2f;
             cam.farClipPlane = 180f;
             cam.clearFlags = CameraClearFlags.SolidColor;
@@ -54,6 +94,7 @@ namespace OutOfWay
             music.Bpm = Bpm;
             music.MetronomeClicks = MetronomeClicks;
             music.GetOutOfTheWayPhrase = GetOutOfTheWayPhrase;
+            music.BackgroundBed = BackgroundBed;
             music.Music = music.gameObject.AddComponent<AudioSource>();
             music.SetupBed();
 
@@ -75,6 +116,21 @@ namespace OutOfWay
             game.Wire();
 
             audio.PlayEngine(false);
+        }
+
+        void ShowDesignerStreet()
+        {
+            if (this == null || Application.isPlaying) return;
+            if (StreetAndBuildings == null && Street == null) return;
+            if (transform.Find(PreviewName) != null) return;
+
+            Look.Init();
+            CityKit.Bind(StreetAndBuildings, Buildings, Street);
+            if (!CityKit.Ready) return;
+
+            var holder = new GameObject(PreviewName).transform;
+            holder.SetParent(transform, false);
+            CityKit.Place(holder, 11);
         }
 
         static void StyleWorld()

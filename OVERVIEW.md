@@ -226,7 +226,7 @@ When entering Play Mode in Unity (or running a standalone build), the entire run
   - Accelerates at `Acceleration = 0.28f` m/s² up to `MaxSpeed = 28f` m/s (~67 MPH).
   - Rotates wheel transforms found via `SpinWithSpeed` proportional to vehicle velocity.
 - **Crash Response:** On crash, speed drops to 0, chassis tilt/shake is applied, and `CameraRig` punches back violently with heavy impulse shake. On retry, rotation resets cleanly to the cached origin pose.
-- **Camera Rig:** Positioned $4.4$m high, $10.5$m behind the bus. Smoothly follows on Z with soft damping and impulse trauma decays.
+- **Camera Rig:** Positioned $4.6$m high, $4.8$m behind the bus with $22$m look-ahead and $60^\circ$ FOV. Follows smoothly behind the bus with a forward-facing perspective showing the bus chassis, road ahead, roadside buildings, and open sky. Smoothly follows on Z with soft damping and impulse trauma decays.
 
 ### 3.6 Spawner & Obstacles (`ObstacleSpawner.cs`, `ObstacleController.cs`)
 - **Location:** `Assets/Scripts/Gameplay/ObstacleSpawner.cs`, `Assets/Scripts/Gameplay/ObstacleController.cs`
@@ -351,7 +351,7 @@ flowchart TD
 | **Roadway width and tile alignment** | `CityKit.cs` | `StandardRoadWidth = 8.2f`, `FindRoad()` |
 | **Street trees and pedestrian spawning** | `CityKit.cs` | `PlantTrees()`, `PlacePedestrians()`, tree height (~5.8m), pedestrian height (~3.4m) |
 | **Obstacle vehicle scale (Car, Ambulance, Bike)** | `VehicleFactory.cs` | `MakeCar()` (1.55x), `MakeAmbulance()` (1.5x), `MakeBike()` (1.45x) |
-| **Camera distance, height, and punch intensity** | `GameBootstrap.cs` / `CameraRig.cs` | `CameraOffset` (`0, 5.8, -1.8`), `CameraLookAhead` (`0, 1.0, 24`), `Rig.Punch(...)` |
+| **Camera distance, height, and punch intensity** | `GameBootstrap.cs` / `CameraRig.cs` | `CameraOffset` (`0, 4.6, -4.8`), `CameraLookAhead` (`0, 1.6, 22`), `Rig.Punch(...)` |
 
 ---
 

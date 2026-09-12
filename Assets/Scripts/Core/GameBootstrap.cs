@@ -48,8 +48,8 @@ namespace OutOfWay
         public PhraseLibrary Phrases;
 
         [Header("Camera Tuning")]
-        public Vector3 CameraOffset = new(0f, 5.8f, -1.8f);
-        public Vector3 CameraLookAhead = new(0f, 1.0f, 24f);
+        public Vector3 CameraOffset = new(0f, 4.6f, -4.8f);
+        public Vector3 CameraLookAhead = new(0f, 1.6f, 22.0f);
 
         [Header("Run")]
         [Tooltip("Seconds between the crash and the run restarting on its own.")]

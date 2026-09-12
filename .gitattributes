@@ -83,8 +83,8 @@ Packages/packages-lock.json linguist-generated
 *.collada               lfs
 *.dae                   lfs
 *.dxf                   lfs
-*.FBX                   lfs
-*.fbx                   lfs
+*.FBX                   binary
+*.fbx                   binary
 *.jas                   lfs
 *.lws                   lfs
 *.lxo                   lfs
@@ -102,10 +102,10 @@ Packages/packages-lock.json linguist-generated
 *.aiff                  lfs
 *.it                    lfs
 *.mod                   lfs
-*.mp3                   lfs
-*.ogg                   lfs
+*.mp3                   binary
+*.ogg                   binary
 *.s3m                   lfs
-*.wav                   lfs
+*.wav                   binary
 *.xm                    lfs
 
 # Video
@@ -120,20 +120,20 @@ Packages/packages-lock.json linguist-generated
 *.wmv                   lfs
 
 # Images
-*.bmp                   lfs
+*.bmp                   binary
 *.exr                   lfs
-*.gif                   lfs
+*.gif                   binary
 *.hdr                   lfs
 *.iff                   lfs
-*.jpeg                  lfs
-*.jpg                   lfs
+*.jpeg                  binary
+*.jpg                   binary
 *.pict                  lfs
-*.png                   lfs
+*.png                   binary
 *.psd                   lfs
-*.tga                   lfs
-*.tif                   lfs
-*.tiff                  lfs
-*.webp                  lfs
+*.tga                   binary
+*.tif                   binary
+*.tiff                  binary
+*.webp                  binary
 
 # Compressed Archive
 *.7z                    lfs
@@ -149,15 +149,15 @@ Packages/packages-lock.json linguist-generated
 *.so                    lfs
 
 # Fonts
-*.otf                   lfs
-*.ttf                   lfs
+*.otf                   binary
+*.ttf                   binary
 
 # Executable/Installer
 *.apk                   lfs
 *.exe                   lfs
 
 # Documents
-*.pdf                   lfs
+*.pdf                   binary
 
 # ETC
 *.a                     lfs

@@ -14,6 +14,8 @@ namespace OutOfWay
         static readonly Color Teal = new(0.10f, 0.38f, 0.42f);
         static readonly Color Stamp = new(0.82f, 0.12f, 0.14f);
         static readonly Color ChipBg = new(0.06f, 0.07f, 0.08f, 0.62f);
+        // Opaque: the tilted stats overlap, and a translucent fill would composite twice and darken.
+        static readonly Color StatBg = new(0.45f, 0.47f, 0.50f, 1f);
         static readonly Color Green = new(0.26f, 0.84f, 0.36f);
         static readonly Color Dim = new(1f, 1f, 1f, 0.20f);
 
@@ -132,7 +134,7 @@ namespace OutOfWay
             rt.anchoredPosition = pos;
             rt.localEulerAngles = new Vector3(0f, 0f, angle);
 
-            Image(holder, "Chip", ChipBg, Vector2.zero, chipSize);
+            Image(holder, "Chip", StatBg, Vector2.zero, chipSize);
             var label = Label(holder, text, size, color, Vector2.zero, chipSize.x - 24f, chipSize.y, FontStyle.Bold);
             label.font = _lyricFont;
             return label;

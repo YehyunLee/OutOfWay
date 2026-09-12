@@ -14,29 +14,32 @@ namespace OutOfWay
         static readonly Color Teal = new(0.10f, 0.38f, 0.42f);
         static readonly Color Stamp = new(0.82f, 0.12f, 0.14f);
         static readonly Color ChipBg = new(0.06f, 0.07f, 0.08f, 0.62f);
+        static readonly Color Green = new(0.26f, 0.84f, 0.36f);
+        static readonly Color Dim = new(1f, 1f, 1f, 0.20f);
 
-        static readonly string[] PipWords = { "GET", "OUT", "OF", "WAY" };
+        static readonly string[] PhraseWords = { "Get", "Out", "Of", "The", "Way" };
 
         Font _font;
+        Font _lyricFont;
         Sprite _circle;
         CanvasGroup _title;
         CanvasGroup _hud;
         CanvasGroup _fail;
         Text _score;
         Text _speed;
-        Text _lyric;
+        Text _streak;
         Text _banner;
         Text _failReason;
         Text _failScore;
-        Image[] _pips;
-        Text[] _pipLabels;
-        Image _honkPip;
+        Text[] _words;
+        Text _failStamp;
         Image _honkFlash;
         RectTransform _honkRt;
         Image _honkImage;
         bool _honkArmed;
         float _flash;
         float _bannerUntil;
+        float _streakPunchUntil;
 
         public static GameUI Create(Transform parent)
         {
@@ -62,8 +65,12 @@ namespace OutOfWay
 
         void Build()
         {
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            _font = Resources.Load<Font>("Fonts/BrownieStencil");
+            if (_font == null) _font = Resources.Load<Font>("Fonts/ArchivoBlack-Regular");
+            if (_font == null) _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (_font == null) _font = Font.CreateDynamicFontFromOSFont(new[] { "Arial", "Helvetica", "Verdana" }, 64);
+            _lyricFont = Resources.Load<Font>("Fonts/BrownieStencil");
+            if (_lyricFont == null) _lyricFont = _font;
             _circle = CircleSprite(128);
 
             _title = Panel("Title", transform, new Color(0.02f, 0.03f, 0.04f, 0.18f));
@@ -71,7 +78,7 @@ namespace OutOfWay
             Label(_title.transform, "OUT OF THE WAY", 86, Mustard, new Vector2(0, 470), 1400, 100, FontStyle.Bold);
             Label(_title.transform, "BUS DRIVER RHYTHM", 26, Paper, new Vector2(0, 400), 800, 36, FontStyle.Normal);
             Image(_title.transform, "BottomBar", new Color(0.05f, 0.05f, 0.06f, 0.78f), new Vector2(0, -430), new Vector2(1920, 220));
-            Label(_title.transform, "They chant GET / OUT / OF / THE WAY.  Honk the next beat.", 26, new Color(1f, 1f, 1f, 0.82f), new Vector2(0, -390), 1400, 40, FontStyle.Italic);
+            Label(_title.transform, "They chant Get Out Of The Way.  Honk it back — once per word, same rhythm.", 26, new Color(1f, 1f, 1f, 0.82f), new Vector2(0, -390), 1400, 40, FontStyle.Italic);
             Label(_title.transform, "SPACE  OR  HONK  TO  DRIVE", 32, Mustard, new Vector2(0, -450), 900, 44, FontStyle.Bold);
 
             _hud = Panel("HUD", transform, Color.clear);
@@ -81,32 +88,19 @@ namespace OutOfWay
             _score = Label(_hud.transform, "CLEARED  0", 28, Paper, Vector2.zero, 240, 40, FontStyle.Bold);
             Anchor(_score.rectTransform, new Vector2(0, 1), new Vector2(160, -48));
 
+            Chip(_hud.transform, new Vector2(48, -132), new Vector2(0, 1), new Vector2(0, 1), new Vector2(280, 60));
+            _streak = Label(_hud.transform, "0 IN A ROW", 22, Mustard, Vector2.zero, 240, 32, FontStyle.Bold);
+            _streak.font = _lyricFont;
+            Anchor(_streak.rectTransform, new Vector2(0, 1), new Vector2(160, -162));
+
             Chip(_hud.transform, new Vector2(-48, -36), new Vector2(1, 1), new Vector2(1, 1), new Vector2(220, 84));
             _speed = Label(_hud.transform, "0 MPH", 28, Mustard, Vector2.zero, 180, 40, FontStyle.Bold);
             Anchor(_speed.rectTransform, new Vector2(1, 1), new Vector2(-140, -48));
 
             _banner = Label(_hud.transform, "", 26, Mustard, new Vector2(0, 330), 900, 40, FontStyle.Bold);
-            _lyric = Label(_hud.transform, "", 64, Paper, new Vector2(0, 250), 900, 80, FontStyle.Bold);
-
-            var track = new GameObject("BeatTrack", typeof(RectTransform)).transform;
-            track.SetParent(_hud.transform, false);
-            var trackRt = track.GetComponent<RectTransform>();
-            trackRt.anchorMin = trackRt.anchorMax = new Vector2(0.5f, 0f);
-            trackRt.pivot = new Vector2(0.5f, 0f);
-            trackRt.sizeDelta = new Vector2(760, 140);
-            trackRt.anchoredPosition = new Vector2(0, 250);
-
-            _pips = new Image[4];
-            _pipLabels = new Text[4];
-            float[] xs = { -270, -90, 90, 270 };
-            for (int i = 0; i < 4; i++)
-            {
-                _pips[i] = Circle(track, xs[i], 36, 42, new Color(1f, 1f, 1f, 0.16f));
-                _pipLabels[i] = Label(track, PipWords[i], 16, new Color(1f, 1f, 1f, 0.45f), new Vector2(xs[i], -8), 80, 24, FontStyle.Bold);
-            }
-
-            _honkPip = Circle(track, 0, 88, 56, new Color(Stamp.r, Stamp.g, Stamp.b, 0.15f));
-            _honkPip.enabled = false;
+            BuildPhraseRow();
+            _failStamp = Label(_hud.transform, "", 96, Stamp, new Vector2(0, 140), 900, 120, FontStyle.Bold);
+            _failStamp.font = _lyricFont;
 
             _honkFlash = Image(_hud.transform, "Flash", Color.clear, Vector2.zero, new Vector2(1920, 1080));
             _honkFlash.raycastTarget = false;
@@ -125,9 +119,42 @@ namespace OutOfWay
             _failScore = Label(_fail.transform, "", 24, Mustard, new Vector2(0, -70), 600, 36, FontStyle.Bold);
             var retry = RectButton(_fail.transform, "TRY AGAIN", new Vector2(0, -170), new Vector2(280, 64));
             retry.onClick.AddListener(() => GameManager.Instance.Retry());
-            Label(_fail.transform, "SPACE  TO  RETRY", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 300, 24, FontStyle.Normal);
+            Label(_fail.transform, "RESTARTING  —  SPACE  TO  SKIP", 18, new Color(1f, 1f, 1f, 0.5f), new Vector2(0, -230), 420, 24, FontStyle.Normal);
 
             ShowTitle();
+        }
+
+        void BuildPhraseRow()
+        {
+            var row = new GameObject("Phrase", typeof(RectTransform), typeof(HorizontalLayoutGroup)).transform;
+            row.SetParent(_hud.transform, false);
+            var rowRt = row.GetComponent<RectTransform>();
+            rowRt.anchorMin = rowRt.anchorMax = rowRt.pivot = new Vector2(0.5f, 0.5f);
+            rowRt.sizeDelta = new Vector2(1600, 130);
+            rowRt.anchoredPosition = new Vector2(0, 250);
+
+            var layout = row.GetComponent<HorizontalLayoutGroup>();
+            layout.spacing = 24f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            _words = new Text[PhraseWords.Length];
+            for (int i = 0; i < PhraseWords.Length; i++)
+            {
+                var word = Label(row, PhraseWords[i], 84, Dim, Vector2.zero, 200, 110, FontStyle.Bold);
+                word.font = _lyricFont;
+                var fitter = word.gameObject.AddComponent<ContentSizeFitter>();
+                fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                _words[i] = word;
+            }
+        }
+
+        void PaintPhrase(Color color)
+        {
+            for (int i = 0; i < _words.Length; i++)
+                _words[i].color = color;
         }
 
         public void ShowTitle()
@@ -148,54 +175,66 @@ namespace OutOfWay
             _hud.blocksRaycasts = true;
             _fail.alpha = 0f;
             _fail.blocksRaycasts = false;
-            _score.text = "CLEARED  0";
-            ResetPips();
-            _lyric.text = "";
+            _score.text = "0 Hit";
+            _streak.text = "0 IN A ROW";
+            PaintPhrase(Dim);
+            _failStamp.text = "";
             _banner.text = "";
             _honkArmed = false;
             if (_honkRt != null) _honkRt.gameObject.SetActive(true);
         }
 
+        /// <summary>A word of the chant just landed. Index 0 starts a fresh phrase.</summary>
         public void ShowCue(int index, string word)
         {
-            _lyric.text = word;
-            _lyric.color = Paper;
-            _honkArmed = false;
-            _honkPip.enabled = false;
-            for (int i = 0; i < _pips.Length; i++)
+            if (index == 0)
             {
-                bool on = i <= index;
-                _pips[i].color = on ? Mustard : new Color(1f, 1f, 1f, 0.16f);
-                _pipLabels[i].color = on ? Ink : new Color(1f, 1f, 1f, 0.45f);
+                PaintPhrase(Dim);
+                _failStamp.text = "";
             }
+
+            if (index >= 0 && index < _words.Length)
+            {
+                _words[index].text = word;
+                _words[index].color = Paper;
+            }
+
+            _honkArmed = false;
 
             if (GameManager.Instance.Spawner.Active != null)
                 _banner.text = GameManager.Instance.Spawner.Active.Label;
         }
 
-        public void ShowHonkWindow()
+        /// <summary>The chant is done — the player's turn to honk it back.</summary>
+        public void ShowResponse()
         {
-            _lyric.text = "HONK";
-            _lyric.color = Stamp;
+            PaintPhrase(Mustard);
+            _banner.text = "HONK IT BACK";
+            _bannerUntil = 0f;
             _honkArmed = true;
-            _honkPip.enabled = true;
-            _honkPip.color = Stamp;
+        }
+
+        public void ShowHonkAccepted(int index)
+        {
+            if (index < 0 || index >= _words.Length) return;
+            _words[index].color = Green;
         }
 
         public void ShowClear(int score, bool perfect)
         {
-            _score.text = $"CLEARED  {score}";
+            _score.text = $"{score} Hit";
             _banner.text = perfect ? "PERFECT — THEY MOVED" : "THEY MOVED";
             _bannerUntil = Time.time + 1.1f;
-            _lyric.text = "";
+            // Green holds until the next chant starts.
+            PaintPhrase(Green);
             _honkArmed = false;
-            ResetPips();
         }
 
         public void ShowMiss(string reason)
         {
             _banner.text = reason;
-            _lyric.color = Stamp;
+            PaintPhrase(Stamp);
+            _failStamp.text = "FAIL!";
             _honkArmed = false;
         }
 
@@ -206,19 +245,17 @@ namespace OutOfWay
             _fail.alpha = 1f;
             _fail.blocksRaycasts = true;
             _failReason.text = reason;
-            _failScore.text = $"CLEARED  {score}     BEST  {best}";
+            _failScore.text = $"{score} HIT     BEST  {best}";
         }
 
         public void FlashHonk() => _flash = 0.16f;
 
-        void ResetPips()
+        /// <summary>Consecutive honks landed on rhythm, carried across phrases and reset on a miss.</summary>
+        public void ShowStreak(int streak)
         {
-            for (int i = 0; i < _pips.Length; i++)
-            {
-                _pips[i].color = new Color(1f, 1f, 1f, 0.16f);
-                _pipLabels[i].color = new Color(1f, 1f, 1f, 0.45f);
-            }
-            _honkPip.enabled = false;
+            _streak.text = streak == 1 ? "1 IN A ROW" : $"{streak} IN A ROW";
+            _streak.color = streak >= 10 ? Stamp : Mustard;
+            _streakPunchUntil = Time.time + 0.22f;
         }
 
         void Update()
@@ -255,6 +292,13 @@ namespace OutOfWay
             {
                 _banner.text = "";
                 _bannerUntil = 0f;
+            }
+
+            if (_streak != null)
+            {
+                float left = _streakPunchUntil - Time.time;
+                float punch = left > 0f ? 1f + 0.35f * (left / 0.22f) : 1f;
+                _streak.transform.localScale = Vector3.one * punch;
             }
         }
 
@@ -327,14 +371,6 @@ namespace OutOfWay
             var img = go.GetComponent<UnityEngine.UI.Image>();
             img.color = color;
             img.raycastTarget = false;
-            return img;
-        }
-
-        Image Circle(Transform parent, float x, float y, float size, Color color)
-        {
-            var img = Image(parent, "Pip", color, new Vector2(x, y), new Vector2(size, size));
-            img.sprite = _circle;
-            img.type = UnityEngine.UI.Image.Type.Simple;
             return img;
         }
 

@@ -10,18 +10,31 @@ namespace OutOfWay
     public class MusicConductor : MonoBehaviour
     {
         public const string BedResource = "Audio/BackgroundBed";
+        const float BedVolume = 0.58f;
 
         [Header("When the track is ready")]
         public float Bpm = 100f;
         public bool MetronomeClicks = true;
         public AudioSource Music;
-        public AudioClip GetOutOfTheWayPhrase;
         public AudioClip BackgroundBed;
 
+        [Header("Chant")]
+        public AudioSource PhraseSource;
+
+        [Tooltip("Playback rate for the chant. Drives difficulty ramp and slow/fast episodes.")]
+        [Range(0.5f, 2f)] public float TempoScale = 1f;
+
         public float BeatInterval => 60f / Mathf.Max(40f, Bpm);
+        public float PhraseTime => PhraseSource != null ? PhraseSource.time : 0f;
+        public bool PhrasePlaying => PhraseSource != null && PhraseSource.isPlaying;
         public static MusicConductor Instance { get; private set; }
 
         void Awake() => Instance = this;
+
+        void Update()
+        {
+            if (PhraseSource != null) PhraseSource.pitch = TempoScale;
+        }
 
         public void SetupBed()
         {
@@ -32,7 +45,7 @@ namespace OutOfWay
             Music.playOnAwake = false;
             Music.spatialBlend = 0f;
             Music.loop = true;
-            Music.volume = 0.58f;
+            Music.volume = BedVolume;
 
             if (BackgroundBed == null) return;
 
@@ -50,10 +63,15 @@ namespace OutOfWay
             if (Music != null) Music.volume = volume;
         }
 
-        public void PlayPhrase()
+        public void RestoreBedVolume() => SetBedVolume(BedVolume);
+
+        public void PlayPhrase(AudioClip clip)
         {
-            if (GetOutOfTheWayPhrase == null || Music == null) return;
-            Music.PlayOneShot(GetOutOfTheWayPhrase);
+            if (clip == null || PhraseSource == null) return;
+            PhraseSource.clip = clip;
+            PhraseSource.pitch = TempoScale;
+            PhraseSource.time = 0f;
+            PhraseSource.Play();
         }
 
         public void Tick(bool accent)

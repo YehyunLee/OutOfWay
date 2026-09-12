@@ -15,6 +15,7 @@ namespace OutOfWay
         Transform[] _wheels;
         float _shake;
         Vector3 _originEuler;
+        bool _originCaptured;
 
         public void CollectWheels()
         {
@@ -26,10 +27,18 @@ namespace OutOfWay
 
         public void StartDriving()
         {
+            // Captured once — a restart can happen mid-jolt, and that rotation must not become the new rest pose.
+            if (!_originCaptured)
+            {
+                _originEuler = transform.eulerAngles;
+                _originCaptured = true;
+            }
+
             Running = true;
             Crashed = false;
             Speed = StartSpeed;
-            _originEuler = transform.eulerAngles;
+            _shake = 0f;
+            transform.eulerAngles = _originEuler;
         }
 
         public void Stop()

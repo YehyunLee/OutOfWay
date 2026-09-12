@@ -1,137 +1,148 @@
-# Out of the Way — project overview
+# Out of the Way — Project Overview
 
-Unity 6 (URP) bus-driver rhythm game. Open `Assets/Scenes/SampleScene`. Designer street meshes live in `Assets/Art` and are assigned on the **OutOfWay** object so they show in the Scene view. Play still recycles those same FBX tiles as you drive.
+**Out of the Way** is a Unity 6 (URP) bus-driver rhythm game built around call-and-response timing. The player drives a city bus along +Z, encountering roadway obstacles. Each encounter triggers a vocal/rhythmic chant ("*Get Out Of The Way*"), after which the player must honk back the exact rhythm to clear the lane.
+
+Open `Assets/Scenes/SampleScene` in Unity. Designer 3D street models live in `Assets/Art/` and are assigned on the **OutOfWay** root GameObject.
 
 ---
 
-## Folder structure
+## Folder Structure
 
 ```
 OutOfWay/
 ├── Assets/
-│   ├── Scenes/SampleScene.unity     The game scene (camera, light, volume, OutOfWay).
-│   ├── Art/                         Designer FBX: FullScene, Buildings, StreetAndSides, StreetLamp, SM_Bus
+│   ├── Scenes/
+│   │   └── SampleScene.unity        Game scene (Main Camera, Directional Light, OutOfWay root)
+│   ├── Art/                         Designer FBX assets (tracked directly in Git)
+│   │   ├── FullScene.fbx            Complete city block (dual building rows, sidewalks, street lamp, road)
+│   │   ├── StreetAndBuildings.fbx   Combined block used as default looping tile
+│   │   ├── StreetAndSides.fbx       Road surface with concrete sidewalks and curbs
+│   │   ├── Street.fbx               Roadway model
+│   │   ├── Buildings.fbx            Urban building facade rows
+│   │   ├── StreetLamp.fbx           3D street lamp post with neck and lantern
+│   │   └── SM_Bus.fbx               Player bus (modular body, wheels, wheel wells)
 │   ├── Scripts/
-│   │   ├── Core/                    Game start, state, music clock
-│   │   ├── Gameplay/                Bus, obstacles, honk rhythm
-│   │   ├── World/                   City loop using the FBX kit
-│   │   ├── Audio/                   Placeholder SFX (horn, crash, engine)
-│   │   └── UI/                      Title, HUD, fail screen
+│   │   ├── Core/                    Bootstrap, game state manager, music conductor
+│   │   ├── Rhythm/                  Phrase patterns, phrase presets, data models
+│   │   ├── Gameplay/                Bus physics, obstacle spawner, obstacle controller, rhythm director
+│   │   ├── World/                   Endless city tile looper, CityKit aligner, Look materials, VehicleFactory
+│   │   ├── Audio/                   Synthesized engine audio, horn, crash SFX
+│   │   └── UI/                      Custom font renderer, call-and-response text animator, HUD
 │   ├── Resources/
-│   │   └── Audio/BackgroundBed.mp3  Looping bed (base tempo)
-│   ├── Settings/                    URP renderer / volume profiles
-│   └── TutorialInfo/                Unity template readme (ignore)
-├── Packages/                        Unity packages (Input System, URP, …)
-└── ProjectSettings/                 Unity version 6000.6.0f1
+│   │   ├── Fonts/                   Display fonts (BrownieStencil, ArchivoBlack, Anton, Bangers, Bungee)
+│   │   └── Audio/
+│   │       └── BackgroundBed.mp3    Looping background rhythm track
+│   ├── Licenses/                    Font and asset usage terms (BrownieStencil)
+│   ├── Settings/                    URP renderer assets, Universal RP configuration
+│   └── TutorialInfo/                Unity template files
+├── Packages/                        Unity packages (URP, Input System, Mathematics, etc.)
+└── ProjectSettings/                 Project configuration (Unity 6000.6.0f1)
 ```
 
-`Library/`, `Temp/`, `Logs/` are generated. Do not commit them.
+> **Note on Version Control:** All `.fbx`, `.ttf`, `.mp3`, and `.png` assets are tracked **directly in Git** (not Git LFS). Any team member can clone or pull with standard `git pull` without needing Git LFS installed or encountering un-imported 130-byte pointer files.
 
 ---
 
-## Scripts — what each file does
+## Scripts & System Architecture
 
 ### Core
 
-| File | Role |
+| Script | Purpose |
 |---|---|
-| `GameBootstrap.cs` | Entry point. Builds city, bus, camera, audio, UI, then wires `GameManager`. Inspector: BPM, metronome, future vocal clip. |
-| `GameManager.cs` | **Main game loop.** States: Title → Playing → Failed. Honk input, score, crash, retry. |
-| `MusicConductor.cs` | Beat clock + looping bed. Loads `Resources/Audio/BackgroundBed`. BPM is derived from an 8-bar (32-beat) loop (~148). |
+| `GameBootstrap.cs` | **Runtime Entry Point.** Initializes `Look`, styles the environment, binds designer FBX assets (`CityKit`), instantiates the bus (`VehicleFactory`), configures the camera rig, builds `MusicConductor`, `RhythmDirector`, `ObstacleSpawner`, `GameUI`, and wires `GameManager`. |
+| `GameManager.cs` | **State & Session Flow.** Handles `Title` &rarr; `Playing` &rarr; `Failed` transitions. Tracks score, speed, distance, and consecutive streaks (*"X IN A ROW"*). Implements fast in-place restarts after crashes. |
+| `MusicConductor.cs` | **High-Precision Audio Clock.** Uses `AudioSettings.dspTime` to provide drift-free beat tracking. Loops `BackgroundBed.mp3`, manages dynamic tempo scaling (`TempoScale`), and provides a dedicated `PhraseSource` for vocal cues. |
+
+### Rhythm & Call-and-Response
+
+| Script | Purpose |
+|---|---|
+| `RhythmDirector.cs` | **Rhythm Loop & Judgment.** Orchestrates the call-and-response cycle. Plays the vocal/visual cue sequence on the "Call" phase, listens for player honks during the "Response" phase, evaluates rhythmic accuracy against pattern timing windows, and fires hit/fail callbacks. |
+| `PhrasePattern.cs` | **Pattern Definition.** Defines token sequences (`"Get"`, `"Out"`, `"Of"`, `"The"`, `"Way"`), exact beat timings (`WordTimes`), tolerance windows (`Tolerance`, `PerfectTolerance`), and response timeouts. |
+| `PhraseLibrary.cs` | **Rhythm Preset Pool.** Supplies phrase pattern variations: `Even` (straight quarter beats), `Rush` (accelerating rhythm), `Drag` (swung delay), `Stutter` (syncopated double hits), `Hold` (dramatic pause), and `Swing`. |
 
 ### Gameplay
 
-| File | Role |
+| Script | Purpose |
 |---|---|
-| `BusController.cs` | Bus rolls forward on its own and speeds up. Camera follow. Crash stop. |
-| `RhythmDirector.cs` | **Main rhythm loop.** Call-and-response phrase player with tolerance window. |
-| `PhrasePattern.cs` | ScriptableObject defining word timings, tolerances, and clips. |
-| `PhraseLibrary.cs` | Pattern pool (Even, Rush, Drag, Stutter, Hold, Swing) with fallback defaults. |
-| `ObstacleSpawner.cs` | Spawns a car / bike / ambulance far enough ahead for the phrase duration. |
-| `ObstacleController.cs` | On success the blocker swerves off the road. Ambulance siren blink. |
+| `BusController.cs` | Auto-drives forward on +Z with continuous acceleration. Manages lane-switch steering tilt, crash spinouts, rest alignment, and wheel rotation. |
+| `ObstacleSpawner.cs` | Dynamically calculates obstacle spawn distances ahead based on current bus speed and the active phrase's duration (`ResponseTimeout`). Spawns cars, bicycles, or ambulances into the bus's lane. |
+| `ObstacleController.cs` | Controls obstacle behavior. On rhythmic success, smoothly steers the vehicle off the road. Controls alternating siren flashes on ambulances. |
 
-### World
+### World & Rendering
 
-| File | Role |
+| Script | Purpose |
 |---|---|
-| `EndlessCity.cs` | Recycles the designer FBX street in front of the bus. No generated landscape. |
-| `CityKit.cs` | Instances the designer block (`FullScene` / `StreetAndBuildings` or modular pieces) with dual building rows and street lamps. |
-| `VehicleFactory.cs` | Player bus from `SM_Bus` when assigned; cars / bikes / ambulance are still primitives. |
-| `Look.cs` | URP materials for the bus fallback, obstacles, and imported FBX colors. |
+| `CityKit.cs` | **Designer FBX Placement Engine.** Inspects imported FBX hierarchies to isolate the road mesh (`Street`), automatically calculates scaling to achieve a standard road width (`8.2m`), aligns road surfaces flush to ground level, and tiles blocks seamlessly along +Z. |
+| `EndlessCity.cs` | **Infinite City Tile Recycler.** Pools and recycles designer city blocks (`FullScene.fbx` / `StreetAndBuildings.fbx`) ahead of the bus and removes distant tiles behind the camera. Uses 100% designer meshes with no procedural cube filler. |
+| `VehicleFactory.cs` | **Vehicle Constructor.** Spawns and configures the designer `SM_Bus.fbx` facing +Z, scales it to 7 units length, sets trigger collision bounds, attaches wheel spinners (`SpinWithSpeed`), and generates stylized obstacle traffic. |
+| `Look.cs` | **URP Material & Palette Bridge.** Automatically converts imported FBX materials to URP Unlit/Lit shaders. Maps Maya material slots (`lambert3`, `lambert4`, `lambert5`, `lambert6`, `lambert7`, `M_Bus_01`, `M_Wheel_01`, `M_WheelClinder_01`) to cohesive game colors while preserving textures. |
 
-### Audio / UI
+### UI & Audio
 
-| File | Role |
+| Script | Purpose |
 |---|---|
-| `ProceduralAudio.cs` | Placeholder horn, clicks, crash, engine rumble until real SFX land. |
-| `GameUI.cs` | Title, score/speed chips, beat pips, round HONK button, license-revoked card. |
-
-### Assets
-
-| File | Role |
-|---|---|
-| `Resources/Audio/BackgroundBed.mp3` | Placeholder loop until other tempos land. |
-| `Art/Street.fbx` | Designer road + sidewalks. |
-| `Art/Buildings.fbx` | Designer building row (one sidewalk in Maya). |
-| `Art/StreetAndBuildings.fbx` | Combined street block used as the looping tile. |
-| `Art/SM_Bus.fbx` | Player bus. |
+| `GameUI.cs` | **Dynamic Typography & Text Animation.** Renders using `BrownieStencil` (fallback to `ArchivoBlack`). Displays animated word tokens that light up on the Call (`Dim` &rarr; `Paper`), flips to **"HONK IT BACK"** (`Mustard`), turns words **Green** on rhythmic hit (`ShowHonkAccepted`), stamps red **"FAIL!"** on mistake, and punches streak counters. |
+| `ProceduralAudio.cs` | Synthesizes placeholder horns, crash noise, metronome clicks, and pitch-scaled engine rumbling. |
 
 ---
 
-## Main loop
+## Game Loop
 
-Two loops run at once: the **run** (drive / crash) and the **phrase** (chant / honk).
+Two synchronized loops run simultaneously:
 
 ```mermaid
 flowchart TD
-  title[Title: bed music looping]
-  title -->|Space or Honk| play[Playing: bus rolls, speed ramps]
-  play --> wait[Wait a few seconds]
-  wait --> spawn[Spawn car / bike / ambulance ahead]
-  spawn --> cue[4 beats: GET / OUT / OF / THE WAY]
-  cue --> honk[Beat 5: HONK window]
-  honk -->|on time| clear[They swerve off — score +1]
-  honk -->|early / late / miss| hit[Bus hits them]
-  clear --> wait
-  hit --> fail[DRIVER'S LICENSE REVOKED]
-  fail -->|Space or Try Again| title
+    subgraph RunLoop [World & Bus Run Loop]
+        title[Title Screen: Bus Parked, Engine Idling]
+        title -->|Space / Click / Honk| play[Playing: Bus Drives +Z, Speed Ramps]
+        play --> spawn[Spawner Places Blocker Far Ahead]
+        spawn --> rhythmCheck{Rhythm Outcome}
+        rhythmCheck -->|All Honks Hit On Rhythm| dodge[Obstacle Swerves Away, Streak +1]
+        dodge --> play
+        rhythmCheck -->|Miss, Early, Late, Timeout| crash[Bus Collides with Blocker]
+        crash --> failCard[Driver License Revoked Card]
+        failCard -->|Auto-Restart or Key Press| play
+    end
+
+    subgraph RhythmLoop [Call-and-Response Rhythm Loop]
+        callPhase[Call Phase: Words Light Up On Beats\nGET • OUT • OF • THE • WAY]
+        callPhase --> respPhase[Response Phase: 'HONK IT BACK'\nPlayer Echoes Rhythm on Space / Button]
+        respPhase --> evalHonk{Timing Window Check}
+        evalHonk -->|Within Tolerance| wordGreen[Word Turns Green, Score Accrues]
+        evalHonk -->|Off-Beat or Timed Out| wordRed[Large 'FAIL!' Stamp Appears]
+        wordGreen --> rhythmCheck
+        wordRed --> rhythmCheck
+    end
 ```
 
-### Run loop (`GameManager`)
-
-1. **Title** — city is visible, bed music playing, bus parked.
-2. **Playing** — bus moves along +Z, city tiles recycle behind the camera, obstacles spawn.
-3. **Failed** — bus stops, music ducks, license card. Retry reloads the scene.
-
-### Phrase loop (`RhythmDirector` + `ObstacleSpawner`)
-
-Only one obstacle at a time.
-
-1. Spawner picks a phrase pattern and places a blocker far enough for the total chant + response time.
-2. **Call:** Words light up across the screen to the rhythm ("Get Out Of The Way").
-3. **Response:** Text turns mustard ("HONK IT BACK"). Player echoes the rhythm with honks.
-4. **Hit on time:** Each word turns green as accepted. All hit -> obstacle swerves off, streak increases.
-5. **Too early, late, or silent:** Text stamps red "FAIL!", bus crashes -> license revoked.
-
-Honk with no active phrase just plays the horn. Does not fail the run.
+### Call-and-Response Breakdown
+1. **Obstacle Spawns**: A blocker appears down the road at a distance calculated from `Speed * PatternDuration`.
+2. **Call Phase**: Words light up across the screen in sync with the beat (*GET &rarr; OUT &rarr; OF &rarr; THE &rarr; WAY*).
+3. **Response Phase**: Prompt flips to **"HONK IT BACK"**. The player taps Space, Left Mouse, or Gamepad A to mirror the phrase rhythm.
+4. **Hit Evaluation**: Each honk is judged against `WordTimes` relative to the first response beat. Correct hits turn the corresponding word green.
+5. **Outcome**:
+   - **Full Phrase Matched**: Blocker dodges into the sidewalk, score increments, streak increases with punch animation, speed increases.
+   - **Mistake / Timeout**: Words stamp red "FAIL!", bus impacts the vehicle, and driver's license is revoked.
 
 ---
 
-## Where to plug work in
+## 3D Art Assets (`Assets/Art/`)
 
-**Music**
+| Asset | Details & Hierarchy |
+|---|---|
+| `FullScene.fbx` | Complete urban street block: asphalt road (`Street`), concrete sidewalks with curbs (`Sides`), multi-story building rows on both sides (`Buildings_side_1`, `Buildings_side_2`, `Buildings_side_3`), and metal street lamps (`Street_lamp`). |
+| `SM_Bus.fbx` | Player bus asset. Composed of `SM_Body_01`, `SM_Front_01`, front and rear wheel meshes (`SM_FrontWheel_01`, `Sm_FrontWheel_02`, `SM_BackWheel_01`, `SM_BackWheel_02`), and wheel wells (`SM_WheelClider_01`). |
+| `StreetAndSides.fbx` / `Street.fbx` | Modular roadway and sidewalks without buildings for customizable layouts. |
+| `Buildings.fbx` | Dual-sided building row models for urban backdrop variety. |
+| `StreetLamp.fbx` | Standalone street lamp model with pole, curved neck, and lamp top/bottom. |
 
-- Bed track: replace `Assets/Resources/Audio/BackgroundBed.mp3` (keep the name, or change `MusicConductor.BedResource`).
-- New tempos: drop another clip and set `Bpm` on the `OutOfWay` object (or keep auto-BPM from an 8-bar loop).
-- Vocal “GET OUT OF THE WAY”: assign `Get Out Of The Way Phrase` on `OutOfWay`. Clip should last **exactly 4 beats**. Uncheck `Metronome Clicks` (already off when the bed is present).
+---
 
-**Art**
+## Where to Configure & Customize
 
-- Street tiles: `Assets/Art/*.fbx`, assigned on the `OutOfWay` object in SampleScene.
-- Landscape is those meshes only (plus a mirrored `Buildings` row). No cube grass, lamps, or props.
-
-**Feel / timing**
-
-- Bus speed: `BusController` (`StartSpeed`, `MaxSpeed`, `Acceleration`).
-- Honk tightness: `RhythmDirector` hit window (`0.42` of a beat).
-- Spawn gap: `ObstacleSpawner` (`FirstDelay`, `MinGap`, `MaxGap`).
+- **Music Bed**: Replace `Assets/Resources/Audio/BackgroundBed.mp3` or configure `BackgroundBed` in `GameBootstrap`.
+- **Rhythm Patterns**: Create or customize `PhrasePattern` ScriptableObjects in `Assets/Scripts/Rhythm/` and assign them to `Phrases` in `GameBootstrap`.
+- **Hit Windows & Difficulty**: Adjust `ToleranceScale` (0.25 to 4.0) on the `OutOfWay` inspector to make timing tighter or more forgiving.
+- **Bus Speed & Acceleration**: Tune `StartSpeed`, `MaxSpeed`, and `Acceleration` in `BusController.cs`.
+- **Designer 3D Models**: Assign custom FBX prefabs into the inspector fields (`FullScene`, `Buildings`, `Street`, `Bus`, `StreetLamp`) on the `OutOfWay` GameObject in `SampleScene`.
